@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>schema | 破立</title><meta name="keywords" content="schema xsd xml"><meta name="author" content="teamtee"><meta name="copyright" content="teamtee"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="This is a tool for restrain xml file">
+<!DOCTYPE html><html class="hide-aside" lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>schema | 破立</title><meta name="keywords" content="schema xsd xml"><meta name="author" content="teamtee"><meta name="copyright" content="teamtee"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="This is a tool for restrain xml file">
 <meta property="og:type" content="article">
 <meta property="og:title" content="schema">
 <meta property="og:url" content="http://teamtee.top/2022/02/02/Schema/index.html">
@@ -54,7 +54,7 @@
   },
   isPhotoFigcaption: false,
   islazyload: false,
-  isAnchor: ture
+  isAnchor: true
 }</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
   title: 'schema',
   isPost: true,
@@ -345,7 +345,7 @@ function loadGitalk () {
     var gitalk = new Gitalk(Object.assign({
       clientID: '3d513fc947567c739a58',
       clientSecret: '6f76db87753c5b59dadce14a86c2b0e40c87748e',
-      repo: 'https://github.com/teamtee/teamtee-blog-content.git',
+      repo: 'teamtee.github.io',
       owner: 'teamtee',
       admin: ['teamtee'],
       id: '85054abe76ace11ebf2d6affeae6add7',
@@ -369,8 +369,8 @@ function commentCount(n){
   }
 }
 
-if ('Gitalk' === 'Gitalk' || !ture) {
-  if (ture) btf.loadComment(document.getElementById('gitalk-container'), loadGitalk)
+if ('Gitalk' === 'Gitalk' || !true) {
+  if (true) btf.loadComment(document.getElementById('gitalk-container'), loadGitalk)
   else loadGitalk()
 } else {
   function loadOtherComment () {

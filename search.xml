@@ -34,18 +34,18 @@
       
       <categories>
           
-          <category> c </category>
-          
           <category> xml </category>
+          
+          <category> c </category>
           
       </categories>
       
       
         <tags>
             
-            <tag> C </tag>
-            
             <tag> xml </tag>
+            
+            <tag> C </tag>
             
             <tag> libzml2 </tag>
             

@@ -4,6 +4,33 @@
   
     
     <entry>
+      <title>github网络问题</title>
+      <link href="/2022/02/08/github%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98/"/>
+      <url>/2022/02/08/github%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98/</url>
+      
+        <content type="html"><![CDATA[<h2 id="常见问题"><a href="#常见问题" class="headerlink" title="常见问题"></a>常见问题</h2><h3 id="OpenSSL-SSL-read-Connection-was-reset-errno-10054"><a href="#OpenSSL-SSL-read-Connection-was-reset-errno-10054" class="headerlink" title="OpenSSL SSL_read: Connection was reset, errno 10054"></a>OpenSSL SSL_read: Connection was reset, errno 10054</h3><h4 id="情况描述"><a href="#情况描述" class="headerlink" title="情况描述"></a>情况描述</h4><p>未设置代理，设置hosts文件，github.om解析成 [52.78.231.108]</p><p>ping 通</p><p>git clone 不通</p><p>网址访问不了</p><h4 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h4><p><a href="https://www.cnblogs.com/fairylyl/p/15059437.html">参考网站</a></p><h2 id="网络优化"><a href="#网络优化" class="headerlink" title="网络优化"></a>网络优化</h2><h3 id="使用代理"><a href="#使用代理" class="headerlink" title="使用代理"></a>使用代理</h3><p>查看配置</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git config --global --list</span><br></pre></td></tr></table></figure><p>设置代理选项</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">git config --global https.proxy http://127.0.0.1:1080</span><br><span class="line">git config --global https.proxy https://127.0.0.1:1080</span><br><span class="line">git config --global --unset http.proxy</span><br><span class="line">git config --global --unset https.proxy</span><br><span class="line">git config --global http.proxy &#x27;socks5://127.0.0.1:1080&#x27;</span><br><span class="line">git config --global https.proxy &#x27;socks5://127.0.0.1:1080&#x27;</span><br></pre></td></tr></table></figure><blockquote><p>其中socks5、http、https是代理方式，一般socks5最快</p></blockquote><p>使用代理软件</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> github </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> github </tag>
+            
+            <tag> network </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>blog:编辑我的博客，发布我的文章</title>
       <link href="/2022/02/08/blog-%E7%BC%96%E8%BE%91%E6%88%91%E7%9A%84%E5%8D%9A%E5%AE%A2%EF%BC%8C%E5%8F%91%E5%B8%83%E6%88%91%E7%9A%84%E6%96%87%E7%AB%A0/"/>
       <url>/2022/02/08/blog-%E7%BC%96%E8%BE%91%E6%88%91%E7%9A%84%E5%8D%9A%E5%AE%A2%EF%BC%8C%E5%8F%91%E5%B8%83%E6%88%91%E7%9A%84%E6%96%87%E7%AB%A0/</url>

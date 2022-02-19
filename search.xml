@@ -4,6 +4,31 @@
   
     
     <entry>
+      <title>Latex 学习笔记</title>
+      <link href="/2022/02/17/Latex-%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/"/>
+      <url>/2022/02/17/Latex-%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/</url>
+      
+        <content type="html"><![CDATA[<h2 id="1-序言"><a href="#1-序言" class="headerlink" title="1.序言"></a>1.序言</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">\documentclass[options]&#123;class&#125;</span><br><span class="line">\usepackage [options]&#123;package&#125;</span><br><span class="line">...</span><br><span class="line">\begin&#123;document&#125;</span><br><span class="line">...</span><br><span class="line">\end&#123;document&#125;</span><br></pre></td></tr></table></figure><blockquote><p>class:book,report,article</p><p>article 和 report 可以有摘要，book 里没有</p><p>article 中没有 chapter，而 report 和 book 则支持所有层次</p></blockquote><blockquote><p>options</p></blockquote><p><img src="C:\Users\upshift\Desktop\个人博客\myblogs\source_posts\Latex-学习笔记\1645110120972.png" alt="1645110120972"></p><h2 id="2-层级结构"><a href="#2-层级结构" class="headerlink" title="2.层级结构"></a>2.层级结构</h2><p><img src="C:\Users\upshift\AppData\Roaming\Typora\typora-user-images\1645110414748.png" alt="1645110414748"></p><h2 id="3-目录"><a href="#3-目录" class="headerlink" title="3.目录"></a>3.目录</h2><p><img src="C:\Users\upshift\Desktop\个人博客\myblogs\source_posts\Latex-学习笔记\1645110446463.png" alt="1645110446463"></p><p>不出现在目录中</p><p><img src="C:\Users\upshift\Desktop\个人博客\myblogs\source_posts\Latex-学习笔记\1645110481184.png" alt="1645110481184"></p><h2 id="4-符号与输出"><a href="#4-符号与输出" class="headerlink" title="4.符号与输出"></a>4.符号与输出</h2><h3 id="（1）转义字符"><a href="#（1）转义字符" class="headerlink" title="（1）转义字符"></a>（1）转义字符</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"></span><br></pre></td></tr></table></figure><h3 id="（2）短中长划线"><a href="#（2）短中长划线" class="headerlink" title="（2）短中长划线"></a>（2）短中长划线</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">一二三个短划线</span><br></pre></td></tr></table></figure><h3 id="（3）调节字体大小"><a href="#（3）调节字体大小" class="headerlink" title="（3）调节字体大小"></a>（3）调节字体大小</h3><p><img src="C:\Users\upshift\Desktop\个人博客\myblogs\source_posts\Latex-学习笔记\1645110707269.png" alt="1645110707269"></p><h3 id="（4）换行换页断字"><a href="#（4）换行换页断字" class="headerlink" title="（4）换行换页断字"></a>（4）换行换页断字</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">\\ 换行</span><br><span class="line">\newline 换行</span><br><span class="line">\newpage 换页</span><br></pre></td></tr></table></figure><h3 id="（5）强调和下划线"><a href="#（5）强调和下划线" class="headerlink" title="（5）强调和下划线"></a>（5）强调和下划线</h3><p><img src="C:\Users\upshift\AppData\Roaming\Typora\typora-user-images\1645110965337.png" alt="1645110965337"></p><h3 id="（6）？"><a href="#（6）？" class="headerlink" title="（6）？"></a>（6）？</h3><p><img src="C:\Users\upshift\Desktop\个人博客\myblogs\source_posts\Latex-学习笔记\1645112432214.png" alt="1645112432214"></p><h3 id="（7）单位？（使用）"><a href="#（7）单位？（使用）" class="headerlink" title="（7）单位？（使用）"></a>（7）单位？（使用）</h3><p><img src="C:\Users\upshift\Desktop\个人博客\myblogs\source_posts\Latex-学习笔记\1645112525228.png" alt="1645112525228"></p><h3 id="（8）长度宏"><a href="#（8）长度宏" class="headerlink" title="（8）长度宏"></a>（8）长度宏</h3><p><img src="C:\Users\upshift\Desktop\个人博客\myblogs\source_posts\Latex-学习笔记\1645112511880.png" alt="1645112511880"></p><h3 id="（9）对齐"><a href="#（9）对齐" class="headerlink" title="（9）对齐"></a>（9）对齐</h3><p><img src="C:\Users\upshift\Desktop\个人博客\myblogs\source_posts\Latex-学习笔记\1645112567505.png" alt="1645112567505"></p><h3 id="（10）缩进与段距"><a href="#（10）缩进与段距" class="headerlink" title="（10）缩进与段距"></a>（10）缩进与段距</h3><p><img src="C:\Users\upshift\Desktop\个人博客\myblogs\source_posts\Latex-学习笔记\1645112852004.png" alt="1645112852004"></p><h3 id="（11）行距"><a href="#（11）行距" class="headerlink" title="（11）行距"></a>（11）行距</h3><h2 id="5-特殊段落"><a href="#5-特殊段落" class="headerlink" title="5.特殊段落"></a><img src="C:\Users\upshift\Desktop\个人博客\myblogs\source_posts\Latex-学习笔记\1645112954389.png" alt="1645112954389">5.特殊段落</h2><h2 id="（1）引用"><a href="#（1）引用" class="headerlink" title="（1）引用"></a>（1）引用</h2><p><img src="C:\Users\upshift\AppData\Roaming\Typora\typora-user-images\1645113227633.png" alt="1645113227633"></p>]]></content>
+      
+      
+      <categories>
+          
+          <category> latex </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> latex </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>win10小技巧</title>
       <link href="/2022/02/08/win10%E5%B0%8F%E6%8A%80%E5%B7%A7/"/>
       <url>/2022/02/08/win10%E5%B0%8F%E6%8A%80%E5%B7%A7/</url>

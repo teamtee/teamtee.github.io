@@ -1,4 +1,4 @@
-一文搞懂Whisper系列1:使用Whisper进行识别和特征提取
+
 
 [Whisper的PT文件下载地址](https://gitcode.csdn.net/65ed73ad1a836825ed799909.html)
 [在Colab微调Whisper](https://huggingface.co/blog/fine-tune-whisper)

@@ -1,7 +1,14 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0"><channel><title>teamtee</title><link>http://teamtee.top</link><description>这里是提姆提的新小屋，旧小屋可以去[这里](http://teamtee.top/teamtee/)</description><copyright>teamtee</copyright><docs>http://www.rssboard.org/rss-specification</docs><generator>python-feedgen</generator><image><url>https://github.githubassets.com/favicons/favicon.svg</url><title>avatar</title><link>http://teamtee.top</link></image><lastBuildDate>Sat, 21 Dec 2024 14:16:45 +0000</lastBuildDate><managingEditor>teamtee</managingEditor><ttl>60</ttl><webMaster>teamtee</webMaster><item><title>Pytorch复习系列2:Dataset数据集</title><link>http://teamtee.top/post/Pytorch-fu-xi-xi-lie-2-Dataset-shu-ju-ji.html</link><description># 前言&#13;
+<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0"><channel><title>teamtee</title><link>http://teamtee.top</link><description>这里是提姆提的新小屋，旧小屋可以去[这里](http://teamtee.top/teamtee/)</description><copyright>teamtee</copyright><docs>http://www.rssboard.org/rss-specification</docs><generator>python-feedgen</generator><image><url>https://github.githubassets.com/favicons/favicon.svg</url><title>avatar</title><link>http://teamtee.top</link></image><lastBuildDate>Sat, 21 Dec 2024 14:18:49 +0000</lastBuildDate><managingEditor>teamtee</managingEditor><ttl>60</ttl><webMaster>teamtee</webMaster><item><title>Pytorch复习系列2:Dataset数据集</title><link>http://teamtee.top/post/Pytorch-fu-xi-xi-lie-2-Dataset-shu-ju-ji.html</link><description># 前言&#13;
 &#13;
-Dataset是存储数据的集合，。</description><guid isPermaLink="true">http://teamtee.top/post/Pytorch-fu-xi-xi-lie-2-Dataset-shu-ju-ji.html</guid><pubDate>Sat, 21 Dec 2024 14:16:18 +0000</pubDate></item><item><title>一文搞懂Whisper系列1:使用Whisper进行识别和特征提取</title><link>http://teamtee.top/post/yi-wen-gao-dong-Whisper-xi-lie-1--shi-yong-Whisper-jin-xing-shi-bie-he-te-zheng-ti-qu.html</link><description>&#13;
+Dataset是存储数据的集合，。</description><guid isPermaLink="true">http://teamtee.top/post/Pytorch-fu-xi-xi-lie-2-Dataset-shu-ju-ji.html</guid><pubDate>Sat, 21 Dec 2024 14:16:18 +0000</pubDate></item><item><title>Pytorch复习系列1:Tensor张量</title><link>http://teamtee.top/post/Pytorch-fu-xi-xi-lie-1-Tensor-zhang-liang.html</link><description># 前言&#13;
+&#13;
+Pytorch计算的基本单位就是Tensor,中文名张量。</description><guid isPermaLink="true">http://teamtee.top/post/Pytorch-fu-xi-xi-lie-1-Tensor-zhang-liang.html</guid><pubDate>Sat, 21 Dec 2024 11:40:47 +0000</pubDate></item><item><title>Pytorch复习系列0:卷首语</title><link>http://teamtee.top/post/Pytorch-fu-xi-xi-lie-0--juan-shou-yu.html</link><description># 前言&#13;
+&#13;
+在动笔写下这篇系列的第一篇博客开始，我就必须要提醒自己，为什么要写下《Pytorch入门》的博客，市面上不是有很多笔记和教程了吗，甚至你自己都是通过这些资料来入门Pytorch的，还需要你写入门教程吗？&#13;
+&#13;
+确实是的，我想市面上的资料已经很全了，但是我觉得还有一些不足：&#13;
+- 缺乏系统性：系统性指的是两个方面，知识的结构性和层次性，市面上的资料往往是分散的，缺乏从一个系统的角度来阐明要义，总是局限于某一种应用，并且知识往往不具备层次性，要么过深，要么过浅，要么过度的难度过于陡峭。</description><guid isPermaLink="true">http://teamtee.top/post/Pytorch-fu-xi-xi-lie-0--juan-shou-yu.html</guid><pubDate>Sat, 21 Dec 2024 11:38:45 +0000</pubDate></item><item><title>一文搞懂Whisper系列1:使用Whisper进行识别和特征提取</title><link>http://teamtee.top/post/yi-wen-gao-dong-Whisper-xi-lie-1--shi-yong-Whisper-jin-xing-shi-bie-he-te-zheng-ti-qu.html</link><description>&#13;
 &#13;
 [Whisper的PT文件下载地址](https://gitcode.csdn.net/65ed73ad1a836825ed799909.html)&#13;
 [在Colab微调Whisper](https://huggingface.co/blog/fine-tune-whisper)&#13;
@@ -161,4 +168,4 @@ transcriptions = processor.batch_decode(outputs.sequences, skip_special_tokens=T
 # 打印转录结果&#13;
 print(transcriptions)&#13;
 &#13;
-```。</description><guid isPermaLink="true">http://teamtee.top/post/yi-wen-gao-dong-Whisper-xi-lie-1--shi-yong-Whisper-jin-xing-shi-bie-he-te-zheng-ti-qu.html</guid><pubDate>Thu, 12 Dec 2024 08:54:05 +0000</pubDate></item><item><title>测试用</title><link>http://teamtee.top/post/ce-shi-yong.html</link><description>测试。</description><guid isPermaLink="true">http://teamtee.top/post/ce-shi-yong.html</guid><pubDate>Thu, 12 Dec 2024 05:07:52 +0000</pubDate></item></channel></rss>
+```。</description><guid isPermaLink="true">http://teamtee.top/post/yi-wen-gao-dong-Whisper-xi-lie-1--shi-yong-Whisper-jin-xing-shi-bie-he-te-zheng-ti-qu.html</guid><pubDate>Thu, 12 Dec 2024 08:54:05 +0000</pubDate></item></channel></rss>

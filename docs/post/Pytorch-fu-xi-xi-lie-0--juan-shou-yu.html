@@ -10,13 +10,23 @@
         let theme = localStorage.getItem("meek_theme") || "light";
         document.documentElement.setAttribute("data-color-mode", theme);
     </script>
-<meta name="description" content="测试。">
-<meta property="og:title" content="测试用">
-<meta property="og:description" content="测试。">
+<meta name="description" content="# 前言
+
+在动笔写下这篇系列的第一篇博客开始，我就必须要提醒自己，为什么要写下《Pytorch入门》的博客，市面上不是有很多笔记和教程了吗，甚至你自己都是通过这些资料来入门Pytorch的，还需要你写入门教程吗？
+
+确实是的，我想市面上的资料已经很全了，但是我觉得还有一些不足：
+- 缺乏系统性：系统性指的是两个方面，知识的结构性和层次性，市面上的资料往往是分散的，缺乏从一个系统的角度来阐明要义，总是局限于某一种应用，并且知识往往不具备层次性，要么过深，要么过浅，要么过度的难度过于陡峭。">
+<meta property="og:title" content="Pytorch复习系列0:卷首语">
+<meta property="og:description" content="# 前言
+
+在动笔写下这篇系列的第一篇博客开始，我就必须要提醒自己，为什么要写下《Pytorch入门》的博客，市面上不是有很多笔记和教程了吗，甚至你自己都是通过这些资料来入门Pytorch的，还需要你写入门教程吗？
+
+确实是的，我想市面上的资料已经很全了，但是我觉得还有一些不足：
+- 缺乏系统性：系统性指的是两个方面，知识的结构性和层次性，市面上的资料往往是分散的，缺乏从一个系统的角度来阐明要义，总是局限于某一种应用，并且知识往往不具备层次性，要么过深，要么过浅，要么过度的难度过于陡峭。">
 <meta property="og:type" content="article">
-<meta property="og:url" content="http://teamtee.top/post/ce-shi-yong.html">
+<meta property="og:url" content="http://teamtee.top/post/Pytorch-fu-xi-xi-lie-0--juan-shou-yu.html">
 <meta property="og:image" content="https://github.githubassets.com/favicons/favicon.svg">
-<title>测试用</title>
+<title>Pytorch复习系列0:卷首语</title>
 
 
 
@@ -49,7 +59,7 @@ body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;
 
 <body>
     <div id="header">
-<h1 class="postTitle">测试用</h1>
+<h1 class="postTitle">Pytorch复习系列0:卷首语</h1>
 <div class="title-right">
     <a href="http://teamtee.top" id="buttonHome" class="btn btn-invisible circle" title="首页">
         <svg class="octicon" width="16" height="16">
@@ -57,7 +67,7 @@ body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;
         </svg>
     </a>
     
-    <a href="https://github.com/teamtee/teamtee.github.io/issues/1" target="_blank" class="btn btn-invisible circle" title="Issue">
+    <a href="https://github.com/teamtee/teamtee.github.io/issues/3" target="_blank" class="btn btn-invisible circle" title="Issue">
         <svg class="octicon" width="16" height="16">
             <path id="pathIssue" fill-rule="evenodd"></path>
         </svg>
@@ -73,7 +83,26 @@ body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;
 </div>
 </div>
     <div id="content">
-<div class="markdown-body" id="postBody"><p>测试</p></div>
+<div class="markdown-body" id="postBody"><h1>前言</h1>
+<p>在动笔写下这篇系列的第一篇博客开始，我就必须要提醒自己，为什么要写下《Pytorch入门》的博客，市面上不是有很多笔记和教程了吗，甚至你自己都是通过这些资料来入门Pytorch的，还需要你写入门教程吗？</p>
+<p>确实是的，我想市面上的资料已经很全了，但是我觉得还有一些不足：</p>
+<ul>
+<li>缺乏系统性：系统性指的是两个方面，知识的结构性和层次性，市面上的资料往往是分散的，缺乏从一个系统的角度来阐明要义，总是局限于某一种应用，并且知识往往不具备层次性，要么过深，要么过浅，要么过度的难度过于陡峭。</li>
+<li>缺乏可读性：可读性质指的易于理解，通俗易懂，能够深入浅出</li>
+</ul>
+<p>同样写博客对我而言也是一种收获：</p>
+<ul>
+<li>输出倒逼输入：我需要告诉你们知识，还得用比较通俗易懂的语言，就要求我必须去深入理解知识，同时这也是对我记忆、理解、使用Pytorch的锻炼</li>
+<li>分享知识的快乐：打开一扇门，收获一方来客。</li>
+</ul>
+<p>但是同时我也会提醒读者：我不会专注于细枝末节的讲解，包括环境的安装等等，我只是专注于讲解Pytorch库本身。</p>
+<p>由于时间的关系，本系列博客采用先写总纲，即作为查找参考书，再拓展的形式。</p>
+<p>卷首语毕，启航出发！</p>
+<h1>参考资料</h1>
+<ul>
+<li><a href="https://zhuanlan.zhihu.com/p/567978232" rel="nofollow">PyTorch源码学习系列-小飞</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/328674159" rel="nofollow">PyTorch 源码解读系列-Openmmlab</a></li>
+</ul></div>
 <div style="font-size:small;margin-top:8px;float:right;">转载请注明出处</div>
 
 </div>

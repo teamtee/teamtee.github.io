@@ -188,6 +188,38 @@ a * c,torch.multiply(a,c)
 <ul>
 <li>torch.max</li>
 <li>torch.min</li>
+</ul>
+<pre class="notranslate"><code class="notranslate">import torch
+
+# 创建一个随机张量
+x = torch.randn(3, 4)
+print("原始张量:\n", x)
+
+# 返回整个张量中的最大值
+max_value = torch.max(x)
+print("最大值:", max_value)
+
+# 沿着维度1返回最大值及其索引
+max_values, max_indices = torch.max(x, dim=1)
+print("每行的最大值:\n", max_values)
+print("每行最大值的索引:\n", max_indices)
+</code></pre>
+<ul>
+<li>torch.argmax</li>
+</ul>
+<pre class="notranslate"><code class="notranslate">import torch
+
+# 创建一个2D张量
+tensor = torch.tensor([[1, 2, 3],
+                       [4, 5, 6],
+                       [7, 8, 9]])
+
+# 找到每一行的最大值索引
+row_max_indices = torch.argmax(tensor, dim=1)
+
+print(row_max_indices)  # 输出: tensor([2, 2, 2])
+</code></pre>
+<ul>
 <li>torch.sum</li>
 <li>torch.exp</li>
 <li>.T<br>
@@ -207,7 +239,7 @@ a.t_
 <ul>
 <li>torch.clip(min,max)</li>
 </ul>
-<h2>Pytorch的形状</h2>
+<h2>Tensor的形状</h2>
 <ul>
 <li>torch.transpose：交换两个向量的维度</li>
 <li>torch.permute：重新排列</li>
@@ -219,7 +251,19 @@ a.t_
 <li>torch.cat</li>
 </ul>
 <pre class="notranslate"><code class="notranslate">torch.cat((a,b),dim=0)
-</code></pre></div>
+</code></pre>
+<h2>Tensor的类型</h2>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-s1">torch</span>.<span class="pl-c1">float64</span>
+<span class="pl-s1">torch</span>.<span class="pl-c1">float32</span>
+<span class="pl-s1">torch</span>.<span class="pl-c1">float16</span> <span class="pl-c1">/</span><span class="pl-s1">torch</span>.<span class="pl-c1">half</span>
+<span class="pl-s1">torch</span>.<span class="pl-c1">bfloat16</span>
+<span class="pl-s1">torch</span>.<span class="pl-c1">int</span>
+<span class="pl-s1">torch</span>.<span class="pl-c1">int8</span></pre></div>
+<ul>
+<li>生成的时候指定dtype</li>
+<li>tensor.astype()</li>
+<li>a.float(),a.double(),a.half(),a.int(),a.long(),a.short(),a.byte(),a.bool(),a.bfloat16()</li>
+</ul></div>
 <div style="font-size:small;margin-top:8px;float:right;">转载请注明出处</div>
 
 </div>

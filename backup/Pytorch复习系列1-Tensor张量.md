@@ -106,6 +106,36 @@ a * c,torch.multiply(a,c)
 ```
 - torch.max
 - torch.min
+```
+import torch
+
+# 创建一个随机张量
+x = torch.randn(3, 4)
+print("原始张量:\n", x)
+
+# 返回整个张量中的最大值
+max_value = torch.max(x)
+print("最大值:", max_value)
+
+# 沿着维度1返回最大值及其索引
+max_values, max_indices = torch.max(x, dim=1)
+print("每行的最大值:\n", max_values)
+print("每行最大值的索引:\n", max_indices)
+```
+- torch.argmax
+```
+import torch
+
+# 创建一个2D张量
+tensor = torch.tensor([[1, 2, 3],
+                       [4, 5, 6],
+                       [7, 8, 9]])
+
+# 找到每一行的最大值索引
+row_max_indices = torch.argmax(tensor, dim=1)
+
+print(row_max_indices)  # 输出: tensor([2, 2, 2])
+```
 - torch.sum
 - torch.exp
 - .T
@@ -123,7 +153,7 @@ def my_func(tensor):
 x = torch.tensor([1.0, 2.0, 3.0]).apply_(my_func)
 ```
 - torch.clip(min,max)
-## Pytorch的形状
+## Tensor的形状
 - torch.transpose：交换两个向量的维度
 - torch.permute：重新排列
 - torch.vew:`torch.view` 用于改变张量的形状，但要求新的视图在内存中是连续的
@@ -134,4 +164,15 @@ x = torch.tensor([1.0, 2.0, 3.0]).apply_(my_func)
 torch.cat((a,b),dim=0)
 ```
 
-
+## Tensor的类型
+```python
+torch.float64
+torch.float32
+torch.float16 /torch.half
+torch.bfloat16
+torch.int
+torch.int8
+```
+- 生成的时候指定dtype
+- tensor.astype()
+- a.float(),a.double(),a.half(),a.int(),a.long(),a.short(),a.byte(),a.bool(),a.bfloat16()

@@ -1,5 +1,15 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0"><channel><title>teamtee</title><link>http://teamtee.top</link><description>这里是提姆提的新小屋，旧小屋可以去[这里](http://teamtee.top/teamtee/)</description><copyright>teamtee</copyright><docs>http://www.rssboard.org/rss-specification</docs><generator>python-feedgen</generator><image><url>https://github.githubassets.com/favicons/favicon.svg</url><title>avatar</title><link>http://teamtee.top</link></image><lastBuildDate>Sat, 21 Dec 2024 14:18:49 +0000</lastBuildDate><managingEditor>teamtee</managingEditor><ttl>60</ttl><webMaster>teamtee</webMaster><item><title>Pytorch复习系列2:Dataset数据集</title><link>http://teamtee.top/post/Pytorch-fu-xi-xi-lie-2-Dataset-shu-ju-ji.html</link><description># 前言&#13;
+<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0"><channel><title>teamtee</title><link>http://teamtee.top</link><description>这里是提姆提的新小屋，旧小屋可以去[这里](http://teamtee.top/teamtee/)</description><copyright>teamtee</copyright><docs>http://www.rssboard.org/rss-specification</docs><generator>python-feedgen</generator><image><url>https://github.githubassets.com/favicons/favicon.svg</url><title>avatar</title><link>http://teamtee.top</link></image><lastBuildDate>Tue, 24 Dec 2024 02:52:59 +0000</lastBuildDate><managingEditor>teamtee</managingEditor><ttl>60</ttl><webMaster>teamtee</webMaster><item><title>3. nn.Parameters参数</title><link>http://teamtee.top/post/3.%20nn.Parameters-can-shu.html</link><description># 前言&#13;
+&#13;
+Parameter和Buffer都是实例化的Tensor，Parameter是参与梯度运算的参数，Buffer是不参与梯度计算的参数&#13;
+&#13;
+`class Parameter(torch.Tensor, metaclass=_ParameterMeta):`&#13;
+&#13;
+- `Parameter` 是一个特殊的张量，它被用来表示模型的参数,自动将 `Parameter` &#13;
+&#13;
+ `class Buffer(torch.Tensor, metaclass=_BufferMeta):`&#13;
+ &#13;
+- `Buffer` 也是一个特殊的张量，它用于存储那些在模型中不直接参与梯度计算的数据，但可能在模型的前向或后向传播中使用。</description><guid isPermaLink="true">http://teamtee.top/post/3.%20nn.Parameters-can-shu.html</guid><pubDate>Tue, 24 Dec 2024 02:52:34 +0000</pubDate></item><item><title>Pytorch复习系列2:Dataset数据集</title><link>http://teamtee.top/post/Pytorch-fu-xi-xi-lie-2-Dataset-shu-ju-ji.html</link><description># 前言&#13;
 &#13;
 Dataset是存储数据的集合，。</description><guid isPermaLink="true">http://teamtee.top/post/Pytorch-fu-xi-xi-lie-2-Dataset-shu-ju-ji.html</guid><pubDate>Sat, 21 Dec 2024 14:16:18 +0000</pubDate></item><item><title>Pytorch复习系列1:Tensor张量</title><link>http://teamtee.top/post/Pytorch-fu-xi-xi-lie-1-Tensor-zhang-liang.html</link><description># 前言&#13;
 &#13;

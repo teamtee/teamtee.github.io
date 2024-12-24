@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html data-color-mode="light" data-dark-theme="dark_colorblind" data-light-theme="light" lang="zh-CN">
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link href='https://mirrors.sustech.edu.cn/cdnjs/ajax/libs/Primer/21.0.7/primer.css' rel='stylesheet' />
+    
+    <link rel="icon" href="https://github.githubassets.com/favicons/favicon.svg"><script>
+        let theme = localStorage.getItem("meek_theme") || "light";
+        document.documentElement.setAttribute("data-color-mode", theme);
+    </script>
+<meta name="description" content="# 前言
+nn.Modules下面包含很多nn.Module的实例，nn.Module是Pytorch所有神经网络的父类
+参考
+[1.PyTorch 源码解读之 nn.Module：核心网络模块接口详解](https://zhuanlan.zhihu.com/p/340453841)
+
+# nn.Module基本属性
+在Module的__init__函数中可能观察到下面nn.Modules的核心组件
+
+```python
+self.training = True  # 控制 training/testing 状态
+self._parameters = OrderedDict()  # 在训练过程中会随着 BP 而更新的参数
+self._buffers = OrderedDict()  # 在训练过程中不会随着 BP 而更新的参数
+self._non_persistent_buffers_set = set()
+self._backward_hooks = OrderedDict()  # Backward 完成后会被调用的 hook
+self._forward_hooks = OrderedDict()  # Forward 完成后会被调用的 hook
+self._forward_pre_hooks = OrderedDict()  # Forward 前会被调用的 hook
+self._state_dict_hooks = OrderedDict()  # 得到 state_dict 以后会被调用的 hook
+self._load_state_dict_pre_hooks = OrderedDict()  # load state_dict 前会被调用的 hook
+self._modules = OrderedDict()  # 子神经网络模块
+```
+
+## 基本属性
+下面的函数可以获取这些参数
+- named_parameters：返回自身parameters,如果 recurse=True 还会返回子模块中的模型参数
+- named_buffers：返回自身parameters,如果 recurse=True 还会返回子模块中的模型 buffer
+- named_children：返回自身的Modules
+-  named_modules：返回自身和子Modules的Moduels(递归调用)
+
+下面的参数是对上面的调用,默认recurse参数为True
+- parameters：
+-  buffers：
+-  children：
+-  modules：
+添加参数
+- add_module：增加子神经网络模块，更新 self._modules
+```
+add_module(name,module)
+```
+-  register_parameter：增加通过 BP 可以更新的 parameters （如 BN 和 Conv 中的 weight 和 bias ），更新 self._parameters
+- register_buffer：增加不通过 BP 更新的 buffer（如 BN 中的 running_mean 和 running_var）
+- self.xxx = xxx ：该方法不会被登记，不属于Paramets和buffer，进行状态转换的时候会被遗漏
+下面的函数可以调整梯度
+- train()
+- eval()
+- requires_grad_()
+- zero_gred()
+
+下面的函数可以映射parameters和buffers
+- `_apply(fn)`:针对parameters和buffers通过调用所有parameters和buffers的tensor的_apply函数实现
+
+```
+1. CPU：将所有 parameters 和 buffer 转移到 CPU 上
+2. type：将所有 parameters 和 buffer 转变成另一个类型
+3. CUDA：将所有 parameters 和 buffer 转移到 GPU 上
+4. float：将所有浮点类型的 parameters 和 buffer 转变成 float32
+5. double：将所有浮点类型的 parameters 和 buffer 转变成 double 类型
+6. half：将所有浮点类型的 parameters 和 buffer 转变成 float16 类型
+8. to：移动模块或/和改变模块的类型
+```
+- `apply`:针对Moduels，
+可以自定义一个 init_weights 函数，通过 `net.apply(init_weights)` 来初始化模型权重。">
+<meta property="og:title" content="Pytorch复习系列4:nn.Modules模块">
+<meta property="og:description" content="# 前言
+nn.Modules下面包含很多nn.Module的实例，nn.Module是Pytorch所有神经网络的父类
+参考
+[1.PyTorch 源码解读之 nn.Module：核心网络模块接口详解](https://zhuanlan.zhihu.com/p/340453841)
+
+# nn.Module基本属性
+在Module的__init__函数中可能观察到下面nn.Modules的核心组件
+
+```python
+self.training = True  # 控制 training/testing 状态
+self._parameters = OrderedDict()  # 在训练过程中会随着 BP 而更新的参数
+self._buffers = OrderedDict()  # 在训练过程中不会随着 BP 而更新的参数
+self._non_persistent_buffers_set = set()
+self._backward_hooks = OrderedDict()  # Backward 完成后会被调用的 hook
+self._forward_hooks = OrderedDict()  # Forward 完成后会被调用的 hook
+self._forward_pre_hooks = OrderedDict()  # Forward 前会被调用的 hook
+self._state_dict_hooks = OrderedDict()  # 得到 state_dict 以后会被调用的 hook
+self._load_state_dict_pre_hooks = OrderedDict()  # load state_dict 前会被调用的 hook
+self._modules = OrderedDict()  # 子神经网络模块
+```
+
+## 基本属性
+下面的函数可以获取这些参数
+- named_parameters：返回自身parameters,如果 recurse=True 还会返回子模块中的模型参数
+- named_buffers：返回自身parameters,如果 recurse=True 还会返回子模块中的模型 buffer
+- named_children：返回自身的Modules
+-  named_modules：返回自身和子Modules的Moduels(递归调用)
+
+下面的参数是对上面的调用,默认recurse参数为True
+- parameters：
+-  buffers：
+-  children：
+-  modules：
+添加参数
+- add_module：增加子神经网络模块，更新 self._modules
+```
+add_module(name,module)
+```
+-  register_parameter：增加通过 BP 可以更新的 parameters （如 BN 和 Conv 中的 weight 和 bias ），更新 self._parameters
+- register_buffer：增加不通过 BP 更新的 buffer（如 BN 中的 running_mean 和 running_var）
+- self.xxx = xxx ：该方法不会被登记，不属于Paramets和buffer，进行状态转换的时候会被遗漏
+下面的函数可以调整梯度
+- train()
+- eval()
+- requires_grad_()
+- zero_gred()
+
+下面的函数可以映射parameters和buffers
+- `_apply(fn)`:针对parameters和buffers通过调用所有parameters和buffers的tensor的_apply函数实现
+
+```
+1. CPU：将所有 parameters 和 buffer 转移到 CPU 上
+2. type：将所有 parameters 和 buffer 转变成另一个类型
+3. CUDA：将所有 parameters 和 buffer 转移到 GPU 上
+4. float：将所有浮点类型的 parameters 和 buffer 转变成 float32
+5. double：将所有浮点类型的 parameters 和 buffer 转变成 double 类型
+6. half：将所有浮点类型的 parameters 和 buffer 转变成 float16 类型
+8. to：移动模块或/和改变模块的类型
+```
+- `apply`:针对Moduels，
+可以自定义一个 init_weights 函数，通过 `net.apply(init_weights)` 来初始化模型权重。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="http://teamtee.top/post/Pytorch-fu-xi-xi-lie-4-nn.Modules-mo-kuai.html">
+<meta property="og:image" content="https://github.githubassets.com/favicons/favicon.svg">
+<title>Pytorch复习系列4:nn.Modules模块</title>
+<link href="//unpkg.com/@wooorm/starry-night@2.1.1/style/both.css" rel="stylesheet" />
+
+
+</head>
+<style>
+body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;padding: 45px;font-size: 16px;font-family: sans-serif;line-height: 1.25;}
+#header{display:flex;padding-bottom:8px;border-bottom: 1px solid var(--borderColor-muted, var(--color-border-muted));margin-bottom: 16px;}
+#footer {margin-top:64px; text-align: center;font-size: small;}
+
+</style>
+
+<style>
+.postTitle{margin: auto 0;font-size:40px;font-weight:bold;}
+.title-right{display:flex;margin:auto 0 0 auto;}
+.title-right .circle{padding: 14px 16px;margin-right:8px;}
+#postBody{border-bottom: 1px solid var(--color-border-default);padding-bottom:36px;}
+#postBody hr{height:2px;}
+#cmButton{height:48px;margin-top:48px;}
+#comments{margin-top:64px;}
+.g-emoji{font-size:24px;}
+@media (max-width: 600px) {
+    body {padding: 8px;}
+    .postTitle{font-size:24px;}
+}
+.copy-feedback {
+    display: none;
+    position: absolute;
+    top: 10px;
+    right: 50px;
+    color: var(--color-fg-on-emphasis);
+    background-color: var(--color-fg-muted);
+    border-radius: 3px;
+    padding: 5px 8px;
+    font-size: 12px;
+}
+</style>
+<style>.markdown-alert{padding:0.5rem 1rem;margin-bottom:1rem;border-left:.25em solid var(--borderColor-default,var(--color-border-default));}.markdown-alert .markdown-alert-title {display:flex;font-weight:var(--base-text-weight-medium,500);align-items:center;line-height:1;}.markdown-alert>:first-child {margin-top:0;}.markdown-alert>:last-child {margin-bottom:0;}</style><style>.markdown-alert.markdown-alert-note {border-left-color:var(--borderColor-accent-emphasis, var(--color-accent-emphasis));background-color:var(--color-accent-subtle);}.markdown-alert.markdown-alert-note .markdown-alert-title {color: var(--fgColor-accent,var(--color-accent-fg));}</style>
+
+
+
+<body>
+    <div id="header">
+<h1 class="postTitle">Pytorch复习系列4:nn.Modules模块</h1>
+<div class="title-right">
+    <a href="http://teamtee.top" id="buttonHome" class="btn btn-invisible circle" title="首页">
+        <svg class="octicon" width="16" height="16">
+            <path id="pathHome" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+    
+    <a href="https://github.com/teamtee/teamtee.github.io/issues/7" target="_blank" class="btn btn-invisible circle" title="Issue">
+        <svg class="octicon" width="16" height="16">
+            <path id="pathIssue" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+    
+
+    <a class="btn btn-invisible circle" onclick="modeSwitch();" title="切换主题">
+        <svg class="octicon" width="16" height="16" >
+            <path id="themeSwitch" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+
+</div>
+</div>
+    <div id="content">
+<div class="markdown-body" id="postBody"><h1>前言</h1>
+<p>nn.Modules下面包含很多nn.Module的实例，nn.Module是Pytorch所有神经网络的父类<br>
+参考<br>
+<a href="https://zhuanlan.zhihu.com/p/340453841" rel="nofollow">1.PyTorch 源码解读之 nn.Module：核心网络模块接口详解</a></p>
+<h1>nn.Module基本属性</h1>
+<p>在Module的__init__函数中可能观察到下面nn.Modules的核心组件</p>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-s1">self</span>.<span class="pl-c1">training</span> <span class="pl-c1">=</span> <span class="pl-c1">True</span>  <span class="pl-c"># 控制 training/testing 状态</span>
+<span class="pl-s1">self</span>.<span class="pl-c1">_parameters</span> <span class="pl-c1">=</span> <span class="pl-en">OrderedDict</span>()  <span class="pl-c"># 在训练过程中会随着 BP 而更新的参数</span>
+<span class="pl-s1">self</span>.<span class="pl-c1">_buffers</span> <span class="pl-c1">=</span> <span class="pl-en">OrderedDict</span>()  <span class="pl-c"># 在训练过程中不会随着 BP 而更新的参数</span>
+<span class="pl-s1">self</span>.<span class="pl-c1">_non_persistent_buffers_set</span> <span class="pl-c1">=</span> <span class="pl-en">set</span>()
+<span class="pl-s1">self</span>.<span class="pl-c1">_backward_hooks</span> <span class="pl-c1">=</span> <span class="pl-en">OrderedDict</span>()  <span class="pl-c"># Backward 完成后会被调用的 hook</span>
+<span class="pl-s1">self</span>.<span class="pl-c1">_forward_hooks</span> <span class="pl-c1">=</span> <span class="pl-en">OrderedDict</span>()  <span class="pl-c"># Forward 完成后会被调用的 hook</span>
+<span class="pl-s1">self</span>.<span class="pl-c1">_forward_pre_hooks</span> <span class="pl-c1">=</span> <span class="pl-en">OrderedDict</span>()  <span class="pl-c"># Forward 前会被调用的 hook</span>
+<span class="pl-s1">self</span>.<span class="pl-c1">_state_dict_hooks</span> <span class="pl-c1">=</span> <span class="pl-en">OrderedDict</span>()  <span class="pl-c"># 得到 state_dict 以后会被调用的 hook</span>
+<span class="pl-s1">self</span>.<span class="pl-c1">_load_state_dict_pre_hooks</span> <span class="pl-c1">=</span> <span class="pl-en">OrderedDict</span>()  <span class="pl-c"># load state_dict 前会被调用的 hook</span>
+<span class="pl-s1">self</span>.<span class="pl-c1">_modules</span> <span class="pl-c1">=</span> <span class="pl-en">OrderedDict</span>()  <span class="pl-c"># 子神经网络模块</span></pre></div>
+<h2>基本属性</h2>
+<p>下面的函数可以获取这些参数</p>
+<ul>
+<li>named_parameters：返回自身parameters,如果 recurse=True 还会返回子模块中的模型参数</li>
+<li>named_buffers：返回自身parameters,如果 recurse=True 还会返回子模块中的模型 buffer</li>
+<li>named_children：返回自身的Modules</li>
+<li>named_modules：返回自身和子Modules的Moduels(递归调用)</li>
+</ul>
+<p>下面的参数是对上面的调用,默认recurse参数为True</p>
+<ul>
+<li>parameters：</li>
+<li>buffers：</li>
+<li>children：</li>
+<li>modules：<br>
+添加参数</li>
+<li>add_module：增加子神经网络模块，更新 self._modules</li>
+</ul>
+<pre class="notranslate"><code class="notranslate">add_module(name,module)
+</code></pre>
+<ul>
+<li>register_parameter：增加通过 BP 可以更新的 parameters （如 BN 和 Conv 中的 weight 和 bias ），更新 self._parameters</li>
+<li>register_buffer：增加不通过 BP 更新的 buffer（如 BN 中的 running_mean 和 running_var）</li>
+<li>self.xxx = xxx ：该方法不会被登记，不属于Paramets和buffer，进行状态转换的时候会被遗漏<br>
+下面的函数可以调整梯度</li>
+<li>train()</li>
+<li>eval()</li>
+<li>requires_grad_()</li>
+<li>zero_gred()</li>
+</ul>
+<p>下面的函数可以映射parameters和buffers</p>
+<ul>
+<li><code class="notranslate">_apply(fn)</code>:针对parameters和buffers通过调用所有parameters和buffers的tensor的_apply函数实现</li>
+</ul>
+<pre class="notranslate"><code class="notranslate">1. CPU：将所有 parameters 和 buffer 转移到 CPU 上
+2. type：将所有 parameters 和 buffer 转变成另一个类型
+3. CUDA：将所有 parameters 和 buffer 转移到 GPU 上
+4. float：将所有浮点类型的 parameters 和 buffer 转变成 float32
+5. double：将所有浮点类型的 parameters 和 buffer 转变成 double 类型
+6. half：将所有浮点类型的 parameters 和 buffer 转变成 float16 类型
+8. to：移动模块或/和改变模块的类型
+</code></pre>
+<ul>
+<li><code class="notranslate">apply</code>:针对Moduels，<br>
+可以自定义一个 init_weights 函数，通过 <code class="notranslate">net.apply(init_weights)</code> 来初始化模型权重。</li>
+</ul>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-en">@<span class="pl-s1">torch</span>.<span class="pl-c1">no_grad</span>()</span>
+<span class="pl-k">def</span> <span class="pl-en">init_weights</span>(<span class="pl-s1">m</span>):
+    <span class="pl-en">print</span>(<span class="pl-s1">m</span>)
+    <span class="pl-k">if</span> <span class="pl-en">type</span>(<span class="pl-s1">m</span>) <span class="pl-c1">==</span> <span class="pl-s1">nn</span>.<span class="pl-c1">Linear</span>:
+        <span class="pl-s1">m</span>.<span class="pl-c1">weight</span>.<span class="pl-c1">fill_</span>(<span class="pl-c1">1.0</span>)
+        <span class="pl-en">print</span>(<span class="pl-s1">m</span>.<span class="pl-c1">weight</span>)
+
+<span class="pl-s1">net</span> <span class="pl-c1">=</span> <span class="pl-s1">nn</span>.<span class="pl-c1">Sequential</span>(<span class="pl-s1">nn</span>.<span class="pl-c1">Linear</span>(<span class="pl-c1">2</span>, <span class="pl-c1">2</span>), <span class="pl-s1">nn</span>.<span class="pl-c1">Linear</span>(<span class="pl-c1">2</span>, <span class="pl-c1">2</span>))
+<span class="pl-s1">net</span>.<span class="pl-c1">apply</span>(<span class="pl-s1">init_weights</span>)</pre></div>
+<h2>Hook钩子</h2>
+<p>钩子是指在特定阶段会被运行的函数，nn.Module的钩子分为全局的钩子（绑定在nn.Module上）和局部的钩子（绑定在特定的子module上）</p>
+<ul>
+<li>先调用全局的钩子然后再调用局部的钩子</li>
+<li>下面是所有钩子的种类<br>
+全局注册钩子的函数</li>
+</ul>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-s1">register_module_forward_pre_hook</span>
+<span class="pl-s1">register_module_forward_hook</span>
+<span class="pl-s1">register_module_full_backward_pre_hook</span>
+<span class="pl-s1">register_module_backward_hook</span>
+<span class="pl-s1">register_module_full_backward_hook</span>
+<span class="pl-s1">register_module_buffer_registration_hook</span>
+<span class="pl-s1">register_module_module_registration_hook</span>
+<span class="pl-s1">register_module_parameter_registration_hook</span></pre></div>
+<p>本地注册除了包含上面的注册函数，还具有下面的注册钩子的函数</p>
+<p><strong><code class="notranslate">register_full_backward_hook</code></strong>：<code class="notranslate">module</code>，<code class="notranslate">grad_input</code>，<code class="notranslate">grad_output</code></p>
+<ul>
+<li>想要影响当前模块的参数梯度，你应该修改 <code class="notranslate">grad_input</code>。如果你想要影响后续操作的梯度，你可以修改 <code class="notranslate">grad_output</code>，但这种修改不会影响当前模块的参数梯度。<br>
+<strong><code class="notranslate">register_backward_hook</code></strong>：<code class="notranslate">module</code>，<code class="notranslate">grad_input</code>，<code class="notranslate">grad_output</code></li>
+<li>这个钩子可以用来获取模块输出端的梯度信息，但不提供修改这些梯度的能力。<br>
+<strong><code class="notranslate">register_full_backward_pre_hook</code></strong>：<code class="notranslate">module</code>，<code class="notranslate">grad_input</code></li>
+<li>可以修改梯度输入</li>
+</ul>
+<p><strong><code class="notranslate">register_forward_pre_hook</code></strong>：<code class="notranslate">module</code>，<code class="notranslate">input</code>、<code class="notranslate">output</code>(None)</p>
+<ul>
+<li>
+<p>钩子函数可以返回一个修改后的输入，这个输入将被用于模块的前向传播。<br>
+<strong><code class="notranslate">register_forward_hook</code></strong>：<code class="notranslate">module</code>，<code class="notranslate">input</code>、<code class="notranslate">output</code>(None)</p>
+</li>
+<li>
+<p>钩子函数可以返回一个输出，这个输出可以被用于后续的钩子或者操作，但不会改变模块本身的输出。</p>
+</li>
+<li>
+<p><strong><code class="notranslate">register_state_dict_pre_hook</code></strong>：</p>
+</li>
+<li>
+<p>这个钩子在调用 <code class="notranslate">state_dict()</code> 方法之前执行。</p>
+</li>
+<li>
+<p>它允许你在状态字典被创建之前修改模型的状态。</p>
+</li>
+<li>
+<p>钩子函数的签名为 <code class="notranslate">hook(module, local_metadata, strict, missing_keys, unexpected_keys, error_msgs)</code>。</p>
+</li>
+<li>
+<p>你可以返回一个修改后的 <code class="notranslate">state_dict</code>，这个状态字典将被用于后续的保存操作。<br>
+<strong><code class="notranslate">register_state_dict_post_hook</code></strong>：</p>
+</li>
+<li>
+<p>这个钩子在调用 <code class="notranslate">state_dict()</code> 方法之后执行。</p>
+</li>
+<li>
+<p>它允许你在状态字典被创建之后进行一些操作，比如记录日志或者进行额外的验证。</p>
+</li>
+<li>
+<p>钩子函数的签名为 <code class="notranslate">hook(module, state_dict)</code>。</p>
+</li>
+<li>
+<p>你不能修改状态字典，因为此时它已经被创建并准备被保存。</p>
+</li>
+</ul>
+<p><strong><code class="notranslate">register_load_state_dict_pre_hook</code></strong>：</p>
+<ul>
+<li>
+<p>这个钩子在调用 <code class="notranslate">load_state_dict()</code> 方法之前执行。</p>
+</li>
+<li>
+<p>它允许你在状态字典被加载到模型之前进行一些操作，比如修改状态字典的内容。</p>
+</li>
+<li>
+<p>钩子函数的签名为 <code class="notranslate">hook(module, state_dict, strict, missing_keys, unexpected_keys, error_msgs)</code>。</p>
+</li>
+<li>
+<p>你可以返回一个修改后的 <code class="notranslate">state_dict</code>，这个状态字典将被用于后续的加载操作。<br>
+<strong><code class="notranslate">register_load_state_dict_post_hook</code></strong>：</p>
+</li>
+<li>
+<p>这个钩子在调用 <code class="notranslate">load_state_dict()</code> 方法之后执行。</p>
+</li>
+<li>
+<p>它允许你在状态字典被加载到模型之后进行一些操作，比如记录日志或者进行额外的验证。</p>
+</li>
+<li>
+<p>钩子函数的签名为 <code class="notranslate">hook(module, state_dict)</code>。</p>
+</li>
+<li>
+<p>你不能修改状态字典，因为此时它已经被加载到模型中。</p>
+</li>
+</ul>
+<p>示例</p>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">def</span> <span class="pl-en">state_dict_pre_hook</span>(<span class="pl-s1">module</span>, <span class="pl-s1">local_metadata</span>, <span class="pl-s1">strict</span>, <span class="pl-s1">missing_keys</span>, <span class="pl-s1">unexpected_keys</span>, <span class="pl-s1">error_msgs</span>):
+    <span class="pl-c"># 在这里可以修改 state_dict 的内容</span>
+    <span class="pl-c"># 例如，我们可以添加一些额外的信息到 local_metadata</span>
+    <span class="pl-s1">local_metadata</span>[<span class="pl-s">'custom_info'</span>] <span class="pl-c1">=</span> <span class="pl-s">'This is a custom info.'</span>
+
+<span class="pl-c"># 注册 state_dict 保存前的钩子</span>
+<span class="pl-s1">handle</span> <span class="pl-c1">=</span> <span class="pl-s1">module</span>.<span class="pl-c1">register_state_dict_pre_hook</span>(<span class="pl-s1">state_dict_pre_hook</span>)
+
+<span class="pl-c"># 保存模型状态字典</span>
+<span class="pl-s1">state_dict</span> <span class="pl-c1">=</span> <span class="pl-s1">module</span>.<span class="pl-c1">state_dict</span>()
+
+<span class="pl-c"># 移除钩子</span>
+<span class="pl-s1">handle</span>.<span class="pl-c1">remove</span>()</pre></div>
+<h1>Modules</h1>
+<h2>nn.Linear</h2>
+<ul>
+<li>Bilinear:双线性层，两个输入的线性层
+<ul>
+<li><code class="notranslate">__init__(input1_dim,input2_dim,output_dim)</code></li>
+</ul>
+</li>
+<li>Linear：
+<ul>
+<li>
+<ul>
+<li><code class="notranslate">__init__(input_dim,output_dim)</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Identity：恒等层，不需要参数的初始化
+<ul>
+<li><code class="notranslate">__init__()</code></li>
+</ul>
+</li>
+<li>LazyLinear:在初始化时不需要指定输入特征的大小（<code class="notranslate">in_features</code>），该值会在模块第一次前向传播时自动推断。权重和偏置参数在第一次前向传播时才被初始化，之前它们是未初始化
+<ul>
+<li><code class="notranslate">__init__(output_dim)</code></li>
+</ul>
+</li>
+</ul>
+<h2>nn.Conv</h2>
+<pre class="notranslate"><code class="notranslate">"Conv1d",
+"Conv2d",
+"Conv3d",
+"ConvTranspose1d",
+"ConvTranspose2d",
+"ConvTranspose3d",
+"LazyConv1d",
+"LazyConv2d",
+"LazyConv3d",
+"LazyConvTranspose1d",
+"LazyConvTranspose2d",
+"LazyConvTranspose3d",
+</code></pre>
+<ul>
+<li>class _ConvNd(Module):</li>
+</ul>
+<pre class="notranslate"><code class="notranslate">"stride",
+"padding",
+"dilation",
+"groups",
+"padding_mode",可以是 `'zeros'`（默认），表示使用零填充；`'reflect'`，表示使用反射填充；`'replicate'`，表示使用复制边缘值的填充；或者 `'circular'`，表示使用循环填充
+"output_padding",
+"in_channels",
+"out_channels",
+"kernel_size",
+</code></pre>
+<div class="markdown-alert markdown-alert-note"><p class="markdown-alert-title"><svg class="octicon octicon-info mr-2" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p><p>groups指定分组卷积数：- 在标准的卷积操作中，每个输入通道与所有输出通道的卷积核进行卷积。这意味着如果输入有 <code class="notranslate">in_channels</code> 个通道，输出有 <code class="notranslate">out_channels</code> 个通道，那么卷积层将有 <code class="notranslate">in_channels * out_channels</code> 个参数。分组卷积改变了这一过程，它将输入通道分成 <code class="notranslate">groups</code> 个组，每组包含 <code class="notranslate">in_channels / groups</code> 个通道。同样，输出通道也被分成 <code class="notranslate">groups</code> 个组。每个组内的输入通道只与对应组内的输出通道进行卷积。</p>
+</div>
+<ul>
+<li>class ConvTransposeNd
+<ul>
+<li>参数类似ConvNd</li>
+<li></li>
+</ul>
+</li>
+</ul>
+<h2>nn.Batchnorm</h2>
+<p>from .batchnorm import (<br>
+BatchNorm1d,<br>
+BatchNorm2d,<br>
+BatchNorm3d,</p>
+<pre class="notranslate"><code class="notranslate">LazyBatchNorm1d,
+LazyBatchNorm2d,
+LazyBatchNorm3d,
+SyncBatchNorm,
+</code></pre>
+<p>)</p>
+<p>$$y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta$$<br>
+其中，$\gamma$ 和 $\beta$是可学习的参数向量默认情况下，$\gamma$的元素被设置为 1，$\beta$ 的元素被设置为 0,$E[x]$和$Var[x]$是存储在buffer的不更梯度更新的参数，在trian模式下，$E[x]$和$Var[x]$的大小为当前批次的大小并且会更新，在eval模式下，$E[x]$和$Var[x]$不会更新并且为训练好的值</p>
+<p>下面为参数的解释</p>
+<ul>
+<li><code class="notranslate">num_features</code>：输入的特征数或通道数。</li>
+<li><code class="notranslate">eps</code>：为防止分母为零而添加到分母的一个小值，默认为 <code class="notranslate">1e-5</code>。</li>
+<li><code class="notranslate">momentum</code>：用于计算运行均值和方差的动量值，默认为 <code class="notranslate">0.1</code>。</li>
+<li><code class="notranslate">affine</code>：布尔值，当设置为 <code class="notranslate">True</code> 时，模块具有可学习的仿射参数，默认为 <code class="notranslate">True</code>。</li>
+<li><code class="notranslate">track_running_stats</code>：布尔值，当设置为 <code class="notranslate">True</code> 时，模块会跟踪运行均值和方差，默认为 <code class="notranslate">True</code>。</li>
+</ul>
+<p><a href="https://zhuanlan.zhihu.com/p/250471767" rel="nofollow">SyncBatchNorm参考这篇</a></p>
+<h2>nn.Dropout</h2>
+<pre class="notranslate"><code class="notranslate">AlphaDropout,
+Dropout,
+Dropout1d,
+Dropout2d,
+Dropout3d,
+FeatureAlphaDropout,
+</code></pre>
+<p><code class="notranslate">Dropout</code> 可以替代 <code class="notranslate">Dropout1d</code>、<code class="notranslate">Dropout2d</code> 和 <code class="notranslate">Dropout3d</code>，因为 <code class="notranslate">Dropout</code> 是一个通用的 <code class="notranslate">dropout</code> 实现</p>
+<p>AlphaDropout不讲，有兴趣可以去看论文：Self-Normalizing Neural Networks</p>
+<h2>nn.normalize</h2>
+<pre class="notranslate"><code class="notranslate">CrossMapLRN2d,
+GroupNorm,
+LayerNorm,
+LocalResponseNorm,
+RMSNorm,
+</code></pre>
+<ul>
+<li>LayerNorm:是对一个样本进行正则化，通常是对最后一个维度
+<ul>
+<li><code class="notranslate">__init__(dim...)</code></li>
+</ul>
+</li>
+<li>RMSNorm：是对LayerNorm的变体,减少了均值的计算
+<ul>
+<li><a href="https://blog.csdn.net/yjw123456/article/details/138139970" rel="nofollow">参考</a></li>
+</ul>
+</li>
+<li>GroupNorm:BatchNorm的变体，将Batch分组，然后在组内Norm
+<ul>
+<li><code class="notranslate">num_groups</code>：指定分组的数量，每组的大小为 <code class="notranslate">num_channels / num_groups</code>。<code class="notranslate">num_groups</code> 必须能被 <code class="notranslate">num_channels</code> 整除。</li>
+<li><code class="notranslate">num_channels</code>：输入张量的通道数。</li>
+</ul>
+</li>
+<li>LocalResponseNorm,<br>
+这个函数很少使用，基本上被类似Dropout这样的方法取代.</li>
+</ul>
+<h2>nn.instancenorm</h2>
+<pre class="notranslate"><code class="notranslate">InstanceNorm1d,
+InstanceNorm2d,
+InstanceNorm3d,
+LazyInstanceNorm1d,
+LazyInstanceNorm2d,
+LazyInstanceNorm3d,
+</code></pre>
+<p>相当于对一个样本进行正则化</p>
+<h2>nn.Pool</h2>
+<pre class="notranslate"><code class="notranslate">AdaptiveAvgPool1d,
+AdaptiveAvgPool2d,
+AdaptiveAvgPool3d,
+AdaptiveMaxPool1d,
+AdaptiveMaxPool2d,
+AdaptiveMaxPool3d,
+AvgPool1d,
+AvgPool2d,
+AvgPool3d,
+FractionalMaxPool2d,
+FractionalMaxPool3d,
+LPPool1d,
+LPPool2d,
+LPPool3d,
+MaxPool1d,
+MaxPool2d,
+MaxPool3d,
+MaxUnpool1d,
+MaxUnpool2d,
+MaxUnpool3d,
+</code></pre>
+<ul>
+<li>MaxPool</li>
+<li>AvgPool</li>
+<li>AdaptiveAvgPool</li>
+<li>AdaptiveMaxPool<br>
+它能够自动调整池化窗口的大小，以便输出一个具有预定大小的特征图</li>
+<li>FractionalMaxPool:<a href="https://arxiv.org/abs/1412.6071" rel="nofollow">有兴趣看论文</a>，同样能够指定池化输出大小</li>
+<li><code class="notranslate">LPPool</code>：是一种基于 Lp 范数的池化操作，它提供了一种在最大池化和平均池化之间平滑过渡的池化方法。</li>
+</ul>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-s1">lp_pool</span> <span class="pl-c1">=</span> <span class="pl-s1">nn</span>.<span class="pl-c1">LPPool2d</span>(<span class="pl-s1">norm_type</span><span class="pl-c1">=</span><span class="pl-c1">2</span>, <span class="pl-s1">kernel_size</span><span class="pl-c1">=</span><span class="pl-c1">3</span>)</pre></div>
+<ul>
+<li>MaxUnpool1d：恢复最大池化前的形状</li>
+</ul>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">import</span> <span class="pl-s1">torch</span>
+<span class="pl-k">import</span> <span class="pl-s1">torch</span>.<span class="pl-s1">nn</span> <span class="pl-k">as</span> <span class="pl-s1">nn</span>
+
+<span class="pl-c"># 创建一个输入张量</span>
+<span class="pl-s1">x</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">randn</span>(<span class="pl-c1">1</span>, <span class="pl-c1">1</span>, <span class="pl-c1">4</span>, <span class="pl-c1">4</span>)
+
+<span class="pl-c"># 创建一个最大池化层，并返回索引</span>
+<span class="pl-s1">pool</span> <span class="pl-c1">=</span> <span class="pl-s1">nn</span>.<span class="pl-c1">MaxPool2d</span>(<span class="pl-c1">2</span>, <span class="pl-s1">return_indices</span><span class="pl-c1">=</span><span class="pl-c1">True</span>)
+<span class="pl-s1">y</span>, <span class="pl-s1">ind</span> <span class="pl-c1">=</span> <span class="pl-en">pool</span>(<span class="pl-s1">x</span>)
+
+<span class="pl-c"># 创建一个 MaxUnpool2d 层</span>
+<span class="pl-s1">unpool</span> <span class="pl-c1">=</span> <span class="pl-s1">nn</span>.<span class="pl-c1">MaxUnpool2d</span>(<span class="pl-c1">2</span>, <span class="pl-c1">2</span>)
+
+<span class="pl-c"># 使用 MaxUnpool2d 恢复数据</span>
+<span class="pl-s1">y_unpool</span> <span class="pl-c1">=</span> <span class="pl-en">unpool</span>(<span class="pl-s1">y</span>, <span class="pl-s1">ind</span>)
+
+<span class="pl-en">print</span>(<span class="pl-s">"原始数据："</span>, <span class="pl-s1">x</span>)
+<span class="pl-en">print</span>(<span class="pl-s">"池化后数据："</span>, <span class="pl-s1">y</span>)
+<span class="pl-en">print</span>(<span class="pl-s">"恢复后数据："</span>, <span class="pl-s1">y_unpool</span>)</pre></div>
+<ul>
+<li></li>
+</ul>
+<h2>nn.Loss</h2>
+<p>二元和多类别分类损失</p>
+<ul>
+<li>
+<p><strong>BCELoss (Binary Cross Entropy Loss)</strong>：用于二元分类问题。<br>
+$$ -y \log(p) - (1 - y) \log(1 - p) $$</p>
+</li>
+<li>
+<p><strong>BCEWithLogitsLoss</strong>：结合了 Sigmoid 层和 BCELoss，适用于二元分类。</p>
+</li>
+<li>
+<p><strong>CrossEntropyLoss</strong>：用于多类别分类问题，结合了 LogSoftmax 和 NLLLoss。<br>
+$$\text{CE}(\mathbf{x}, y) = -\log\left(\frac{\exp(x_y)}{\sum_{i=1}^{C} \exp(x_i)}\right)$$</p>
+</li>
+<li>
+<p><strong>NLLLoss (Negative Log Likelihood Loss)</strong>：用于多类别分类问题，计算输入的负对数似然。</p>
+</li>
+<li>
+<p><strong>NLLLoss2d</strong>：与 NLLLoss 类似，但适用于二维输入。</p>
+</li>
+</ul>
+<p>回归损失</p>
+<ul>
+<li><strong>MSELoss (Mean Squared Error Loss)</strong>：用于回归问题，计算预测值和目标值之间的均方误差。</li>
+<li><strong>SmoothL1Loss</strong>：用于回归问题，结合了 L1 和 L2 损失，对异常值不敏感。</li>
+<li><strong>L1Loss</strong>：用于回归问题，计算预测值和目标值之间的绝对误差。</li>
+</ul>
+<p>嵌入和距离损失</p>
+<ul>
+<li><strong>CosineEmbeddingLoss</strong>：用于测量两个向量的余弦距离，常用于学习相似性。</li>
+<li><strong>HingeEmbeddingLoss</strong>：用于学习向量之间的边界，常用于排序问题。</li>
+<li><strong>TripletMarginLoss</strong>：用于学习样本之间的相对距离，常用于度量学习。</li>
+<li><strong>TripletMarginWithDistanceLoss</strong>：结合了 TripletMarginLoss 和距离计算。</li>
+</ul>
+<p>排名和排序损失</p>
+<ul>
+<li><strong>MarginRankingLoss</strong>：用于学习排序，使得正样本的分数高于负样本。</li>
+<li><strong>MultiLabelMarginLoss</strong>：用于多标签分类问题，每个标签独立计算。</li>
+</ul>
+<p>分布损失</p>
+<ul>
+<li><strong>KLDivLoss (Kullback-Leibler Divergence Loss)</strong>：用于衡量两个概率分布之间的差异。</li>
+<li><strong>GaussianNLLLoss</strong>：用于高斯分布的负对数似然损失。</li>
+<li><strong>PoissonNLLLoss</strong>：用于泊松分布的负对数似然损失。</li>
+</ul>
+<p>其他损失</p>
+<ul>
+<li><strong>HuberLoss</strong>：对 L1 和 L2 损失的组合，对异常值不敏感。</li>
+<li><strong>SoftMarginLoss</strong>：用于分类问题，当边界不是硬性的时候。</li>
+<li><strong>MultiLabelSoftMarginLoss</strong>：用于多标签分类问题，每个标签独立计算，允许软边界。</li>
+</ul>
+<p>序列和结构化预测损失</p>
+<ul>
+<li><strong>CTCLoss (Connectionist Temporal Classification Loss)</strong>：用于序列标注问题，如语音识别和手写识别。</li>
+<li><strong>MultiMarginLoss</strong>：用于多分类问题，每个类别独立计算。</li>
+</ul>
+<h2>nn.activation</h2>
+<ul>
+<li>
+<strong>Sigmoid</strong>：将输入压缩到 0 和 1 之间。<br>
+$$\sigma(x) = \frac{1}{1 + e^{-x}}$$
+</li>
+<li>
+<strong>Tanh</strong>：将输入压缩到 -1 和 1 之间。</li>
+</ul>
+<p>$$ \tanh(x) = \frac{e^x - e^{-x}}{e^x + e^{-x}}$$</p>
+<ul>
+<li>
+<strong>ReLU (Rectified Linear Unit)</strong>：线性激活函数，负值置零。<br>
+$$ \text{ReLU}(x) = \max(0, x)$$</li>
+<li>
+<strong>LeakyReLU</strong>：ReLU 的变种，允许负值有小的梯度。</li>
+</ul>
+<p>$$\text{LeakyReLU}(x) = \begin{cases}
+x &amp; \text{if } x &gt; 0 \\
+\alpha x &amp; \text{if } x \leq 0
+\end{cases}$$</p>
+<ul>
+<li><strong>PReLU (Parametric ReLU)</strong>：LeakyReLU 的变种，负值的斜率是可学习的。</li>
+<li><strong>RReLU (Randomized ReLU)</strong>：LeakyReLU 的变种，负值的斜率在一定范围内随机选择。</li>
+<li><strong>ReLU6</strong>：将输入限制在 -6 和 6 之间，类似于 ReLU，但有上限。</li>
+<li><strong>SELU (Scaled Exponential Linear Unit)</strong>：自归一化激活函数，具有参数学习和缩放。</li>
+<li><strong>SiLU (Sigmoid Linear Unit)</strong> 或 <strong>Swish</strong>：由 sigmoid 函数和输入的线性组合构成。</li>
+<li><strong>CELU (Continuously Differentiable Exponential Linear Unit)</strong>：平滑且连续可微的指数线性单元。</li>
+<li><strong>ELU (Exponential Linear Unit)</strong>：类似于 ReLU，但负值部分有指数运算。</li>
+<li><strong>GELU (Gaussian Error Linear Unit)</strong>：基于高斯误差函数的激活函数。</li>
+<li><strong>GLU (Gated Linear Unit)</strong>：门控线性单元，对输入的一部分进行缩放。</li>
+<li><strong>Hardshrink</strong>：硬缩放函数，当输入小于某个阈值时输出零。</li>
+<li><strong>Hardsigmoid</strong>：Hardshrink 的变种，输出经过 sigmoid 压缩的值。</li>
+<li><strong>Hardswish</strong>：Hardsigmoid 的变种，输出经过 swish 激活的值。</li>
+<li><strong>Hardtanh</strong>：将输入限制在 -1 和 1 之间，类似于 tanh，但有硬性限制。</li>
+<li><strong>LogSigmoid</strong>：Sigmoid 激活函数与对数的组合。</li>
+<li><strong>Mish</strong>：一种新型激活函数，结合了 Sigmoid 和 Softplus。</li>
+<li><strong>Softplus</strong>：ReLU 的平滑版本，对负值部分使用 log 函数。</li>
+<li><strong>Softshrink</strong>：Softplus 的变种，当输入小于某个阈值时输出零。</li>
+<li><strong>Softsign</strong>：将输入压缩到 -1 和 1 之间，类似于 tanh，但使用除法。</li>
+<li><strong>Softmin</strong>：最小值激活函数，计算输入沿指定维度的最小值。</li>
+<li><strong>Tanhshrink</strong>：Tanh 的变种，输出输入与双曲正切的差。</li>
+<li><strong>Threshold</strong>：阈值激活函数，当输入超过阈值时才输出输入值</li>
+</ul></div>
+<div style="font-size:small;margin-top:8px;float:right;">转载请注明出处</div>
+
+</div>
+    <div id="footer"><div id="footer1">Copyright © <span id="copyrightYear"></span> <a href="http://teamtee.top">teamtee</a></div>
+<div id="footer2">
+    <span id="runday"></span><span>Powered by <a href="https://meekdai.com/Gmeek.html" target="_blank">Gmeek</a></span>
+</div>
+
+<script>
+var now=new Date();
+document.getElementById("copyrightYear").innerHTML=now.getFullYear();
+
+if(""!=""){
+    var startSite=new Date("");
+    var diff=now.getTime()-startSite.getTime();
+    var diffDay=Math.floor(diff/(1000*60*60*24));
+    document.getElementById("runday").innerHTML="网站运行"+diffDay+"天"+" • ";
+}
+</script></div>
+</body>
+<script>
+var IconList={'sun': 'M8 10.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM8 12a4 4 0 100-8 4 4 0 000 8zM8 0a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0V.75A.75.75 0 018 0zm0 13a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 018 13zM2.343 2.343a.75.75 0 011.061 0l1.06 1.061a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zm9.193 9.193a.75.75 0 011.06 0l1.061 1.06a.75.75 0 01-1.06 1.061l-1.061-1.06a.75.75 0 010-1.061zM16 8a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0116 8zM3 8a.75.75 0 01-.75.75H.75a.75.75 0 010-1.5h1.5A.75.75 0 013 8zm10.657-5.657a.75.75 0 010 1.061l-1.061 1.06a.75.75 0 11-1.06-1.06l1.06-1.06a.75.75 0 011.06 0zm-9.193 9.193a.75.75 0 010 1.06l-1.06 1.061a.75.75 0 11-1.061-1.06l1.06-1.061a.75.75 0 011.061 0z', 'moon': 'M9.598 1.591a.75.75 0 01.785-.175 7 7 0 11-8.967 8.967.75.75 0 01.961-.96 5.5 5.5 0 007.046-7.046.75.75 0 01.175-.786zm1.616 1.945a7 7 0 01-7.678 7.678 5.5 5.5 0 107.678-7.678z', 'sync': 'M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z', 'home': 'M6.906.664a1.749 1.749 0 0 1 2.187 0l5.25 4.2c.415.332.657.835.657 1.367v7.019A1.75 1.75 0 0 1 13.25 15h-3.5a.75.75 0 0 1-.75-.75V9H7v5.25a.75.75 0 0 1-.75.75h-3.5A1.75 1.75 0 0 1 1 13.25V6.23c0-.531.242-1.034.657-1.366l5.25-4.2Zm1.25 1.171a.25.25 0 0 0-.312 0l-5.25 4.2a.25.25 0 0 0-.094.196v7.019c0 .138.112.25.25.25H5.5V8.25a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v5.25h2.75a.25.25 0 0 0 .25-.25V6.23a.25.25 0 0 0-.094-.195Z', 'github': 'M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z', 'copy': 'M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z', 'check': 'M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z'};
+var utterancesLoad=0;
+
+let themeSettings={
+    "dark": ["dark","moon","#00f0ff","dark-blue"],
+    "light": ["light","sun","#ff5000","github-light"],
+    "auto": ["auto","sync","","preferred-color-scheme"]
+};
+function changeTheme(mode, icon, color, utheme){
+    document.documentElement.setAttribute("data-color-mode",mode);
+    document.getElementById("themeSwitch").setAttribute("d",value=IconList[icon]);
+    document.getElementById("themeSwitch").parentNode.style.color=color;
+    if(utterancesLoad==1){utterancesTheme(utheme);}
+}
+function modeSwitch(){
+    let currentMode=document.documentElement.getAttribute('data-color-mode');
+    let newMode = currentMode === "light" ? "dark" : currentMode === "dark" ? "auto" : "light";
+    localStorage.setItem("meek_theme", newMode);
+    if(themeSettings[newMode]){
+        changeTheme(...themeSettings[newMode]);
+    }
+}
+function utterancesTheme(theme){
+    const message={type:'set-theme',theme: theme};
+    const iframe=document.getElementsByClassName('utterances-frame')[0];
+    iframe.contentWindow.postMessage(message,'https://utteranc.es');
+}
+if(themeSettings[theme]){changeTheme(...themeSettings[theme]);}
+console.log("\n %c Gmeek last https://github.com/Meekdai/Gmeek \n","padding:5px 0;background:#02d81d;color:#fff");
+</script>
+
+<script>
+document.getElementById("pathHome").setAttribute("d",IconList["home"]);
+document.getElementById("pathIssue").setAttribute("d",IconList["github"]);
+
+
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    const createClipboardHTML = (codeContent, additionalClasses = '') => `
+        <pre class="notranslate"><code class="notranslate">${codeContent}</code></pre>
+        <div class="clipboard-container position-absolute right-0 top-0 ${additionalClasses}">
+            <clipboard-copy class="ClipboardButton btn m-2 p-0" role="button" style="display: inherit;">
+                <svg height="16" width="16" class="octicon octicon-copy m-2"><path d="${IconList["copy"]}"></path></svg>
+                <svg height="16" width="16" class="octicon octicon-check color-fg-success m-2 d-none"><path d="${IconList["check"]}"></path></svg>
+            </clipboard-copy>
+            <div class="copy-feedback">Copied!</div>
+        </div>
+    `;
+
+    const handleCodeElements = (selector = '') => {
+        document.querySelectorAll(selector).forEach(codeElement => {
+            const codeContent = codeElement.innerHTML;
+            const newStructure = document.createElement('div');
+            newStructure.className = 'snippet-clipboard-content position-relative overflow-auto';
+            newStructure.innerHTML = createClipboardHTML(codeContent);
+
+            const parentElement = codeElement.parentElement;
+            if (selector.includes('highlight')) {
+                parentElement.insertBefore(newStructure, codeElement.nextSibling);
+                parentElement.removeChild(codeElement);
+            } else {
+                parentElement.parentElement.replaceChild(newStructure, parentElement);
+            }
+        });
+    };
+
+    handleCodeElements('pre.notranslate > code.notranslate');
+    handleCodeElements('div.highlight > pre.notranslate');
+
+    let currentFeedback = null;
+    document.querySelectorAll('clipboard-copy').forEach(copyButton => {
+        copyButton.addEventListener('click', () => {
+            const codeContent = copyButton.closest('.snippet-clipboard-content').innerText;
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = codeContent;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            const copyIcon = copyButton.querySelector('.octicon-copy');
+            const checkIcon = copyButton.querySelector('.octicon-check');
+            const copyFeedback = copyButton.nextElementSibling;
+
+            if (currentFeedback && currentFeedback !== copyFeedback) {currentFeedback.style.display = 'none';}
+            currentFeedback = copyFeedback;
+
+            copyIcon.classList.add('d-none');
+            checkIcon.classList.remove('d-none');
+            copyFeedback.style.display = 'block';
+            copyButton.style.borderColor = 'var(--color-success-fg)';
+
+            setTimeout(() => {
+                copyIcon.classList.remove('d-none');
+                checkIcon.classList.add('d-none');
+                copyFeedback.style.display = 'none';
+                copyButton.style.borderColor = '';
+            }, 2000);
+        });
+    });
+});
+
+</script>
+<script>MathJax = {tex: {inlineMath: [["$", "$"]]}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+</html>

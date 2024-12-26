@@ -666,7 +666,53 @@ x &amp; \text{if } x &gt; 0 \\
 <li><strong>Softmin</strong>：最小值激活函数，计算输入沿指定维度的最小值。</li>
 <li><strong>Tanhshrink</strong>：Tanh 的变种，输出输入与双曲正切的差。</li>
 <li><strong>Threshold</strong>：阈值激活函数，当输入超过阈值时才输出输入值</li>
-</ul></div>
+</ul>
+<h2>nn.Transformer</h2>
+<pre class="notranslate"><code class="notranslate">"Transformer"
+"TransformerEncoder"
+"TransformerDecoder"
+"TransformerEncoderLayer"
+"TransformerDecoderLayer"
+</code></pre>
+<p>使用相对简单，简单示范下TransformerEncoderLayer</p>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-c1">&gt;</span><span class="pl-c1">&gt;&gt;</span> <span class="pl-s1">decoder_layer</span> <span class="pl-c1">=</span> <span class="pl-s1">nn</span>.<span class="pl-c1">TransformerDecoderLayer</span>(<span class="pl-s1">d_model</span><span class="pl-c1">=</span><span class="pl-c1">512</span>, <span class="pl-s1">nhead</span><span class="pl-c1">=</span><span class="pl-c1">8</span>, <span class="pl-s1">batch_first</span><span class="pl-c1">=</span><span class="pl-c1">True</span>)
+<span class="pl-c1">&gt;</span><span class="pl-c1">&gt;&gt;</span> <span class="pl-s1">memory</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">rand</span>(<span class="pl-c1">32</span>, <span class="pl-c1">10</span>, <span class="pl-c1">512</span>)
+<span class="pl-c1">&gt;</span><span class="pl-c1">&gt;&gt;</span> <span class="pl-s1">tgt</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">rand</span>(<span class="pl-c1">32</span>, <span class="pl-c1">20</span>, <span class="pl-c1">512</span>)
+<span class="pl-c1">&gt;</span><span class="pl-c1">&gt;&gt;</span> <span class="pl-s1">out</span> <span class="pl-c1">=</span> <span class="pl-en">decoder_layer</span>(<span class="pl-s1">tgt</span>, <span class="pl-s1">memory</span>)</pre></div>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-c1">&gt;</span><span class="pl-c1">&gt;&gt;</span> <span class="pl-s1">decoder_layer</span> <span class="pl-c1">=</span> <span class="pl-s1">nn</span>.<span class="pl-c1">TransformerDecoderLayer</span>(<span class="pl-s1">d_model</span><span class="pl-c1">=</span><span class="pl-c1">512</span>, <span class="pl-s1">nhead</span><span class="pl-c1">=</span><span class="pl-c1">8</span>)
+<span class="pl-c1">&gt;</span><span class="pl-c1">&gt;&gt;</span> <span class="pl-s1">transformer_decoder</span> <span class="pl-c1">=</span> <span class="pl-s1">nn</span>.<span class="pl-c1">TransformerDecoder</span>(<span class="pl-s1">decoder_layer</span>, <span class="pl-s1">num_layers</span><span class="pl-c1">=</span><span class="pl-c1">6</span>)
+<span class="pl-c1">&gt;</span><span class="pl-c1">&gt;&gt;</span> <span class="pl-s1">memory</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">rand</span>(<span class="pl-c1">10</span>, <span class="pl-c1">32</span>, <span class="pl-c1">512</span>)
+<span class="pl-c1">&gt;</span><span class="pl-c1">&gt;&gt;</span> <span class="pl-s1">tgt</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">rand</span>(<span class="pl-c1">20</span>, <span class="pl-c1">32</span>, <span class="pl-c1">512</span>)
+<span class="pl-c1">&gt;</span><span class="pl-c1">&gt;&gt;</span> <span class="pl-s1">out</span> <span class="pl-c1">=</span> <span class="pl-en">transformer_decoder</span>(<span class="pl-s1">tgt</span>, <span class="pl-s1">memory</span>)</pre></div>
+<h2>nn.Sparse</h2>
+<pre class="notranslate"><code class="notranslate">Embedding：
+EmbeddingBag:句子级别的嵌入向量
+</code></pre>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">import</span> <span class="pl-s1">torch</span>
+<span class="pl-k">import</span> <span class="pl-s1">torch</span>.<span class="pl-s1">nn</span> <span class="pl-k">as</span> <span class="pl-s1">nn</span>
+<span class="pl-c"># 创建一个词嵌入层，词汇表大小为 10，嵌入维度为 3</span>
+<span class="pl-s1">embedding</span> <span class="pl-c1">=</span> <span class="pl-s1">nn</span>.<span class="pl-c1">Embedding</span>(<span class="pl-s1">num_embeddings</span><span class="pl-c1">=</span><span class="pl-c1">10</span>, <span class="pl-s1">embedding_dim</span><span class="pl-c1">=</span><span class="pl-c1">3</span>)
+<span class="pl-c"># 输入为词索引</span>
+<span class="pl-s1">input_indices</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">tensor</span>([<span class="pl-c1">1</span>, <span class="pl-c1">2</span>, <span class="pl-c1">3</span>, <span class="pl-c1">4</span>])
+<span class="pl-c"># 获取嵌入向量</span>
+<span class="pl-s1">output</span> <span class="pl-c1">=</span> <span class="pl-en">embedding</span>(<span class="pl-s1">input_indices</span>)
+<span class="pl-en">print</span>(<span class="pl-s1">output</span>)</pre></div>
+<ul>
+<li><code class="notranslate">mode</code>：聚合方式，可以是 <code class="notranslate">'mean'</code>、<code class="notranslate">'sum'</code> 或 <code class="notranslate">'max'</code>。默认是 <code class="notranslate">'mean'</code>。</li>
+</ul>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">import</span> <span class="pl-s1">torch</span>
+<span class="pl-k">import</span> <span class="pl-s1">torch</span>.<span class="pl-s1">nn</span> <span class="pl-k">as</span> <span class="pl-s1">nn</span>
+
+<span class="pl-c"># 创建一个嵌入袋层，词汇表大小为 10，嵌入维度为 3</span>
+<span class="pl-s1">embedding_bag</span> <span class="pl-c1">=</span> <span class="pl-s1">nn</span>.<span class="pl-c1">EmbeddingBag</span>(<span class="pl-s1">num_embeddings</span><span class="pl-c1">=</span><span class="pl-c1">10</span>, <span class="pl-s1">embedding_dim</span><span class="pl-c1">=</span><span class="pl-c1">3</span>, <span class="pl-s1">mode</span><span class="pl-c1">=</span><span class="pl-s">'mean'</span>)
+
+<span class="pl-c"># 输入为词索引和对应的 offsets</span>
+<span class="pl-s1">input_indices</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">tensor</span>([<span class="pl-c1">1</span>, <span class="pl-c1">2</span>, <span class="pl-c1">3</span>, <span class="pl-c1">4</span>])
+<span class="pl-s1">offsets</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">tensor</span>([<span class="pl-c1">0</span>])  <span class="pl-c"># 句子的起始位置</span>
+
+<span class="pl-c"># 获取嵌入向量并进行聚合</span>
+<span class="pl-s1">output</span> <span class="pl-c1">=</span> <span class="pl-en">embedding_bag</span>(<span class="pl-s1">input_indices</span>, <span class="pl-s1">offsets</span>)
+<span class="pl-en">print</span>(<span class="pl-s1">output</span>)</pre></div></div>
 <div style="font-size:small;margin-top:8px;float:right;">转载请注明出处</div>
 
 </div>

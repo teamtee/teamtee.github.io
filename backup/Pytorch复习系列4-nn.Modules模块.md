@@ -396,3 +396,60 @@ x & \text{if } x > 0 \\
 - **Softmin**：最小值激活函数，计算输入沿指定维度的最小值。
 - **Tanhshrink**：Tanh 的变种，输出输入与双曲正切的差。
 - **Threshold**：阈值激活函数，当输入超过阈值时才输出输入值
+## nn.Transformer
+
+```
+"Transformer"
+"TransformerEncoder"
+"TransformerDecoder"
+"TransformerEncoderLayer"
+"TransformerDecoderLayer"
+```
+使用相对简单，简单示范下TransformerEncoderLayer
+```python
+>>> decoder_layer = nn.TransformerDecoderLayer(d_model=512, nhead=8, batch_first=True)
+>>> memory = torch.rand(32, 10, 512)
+>>> tgt = torch.rand(32, 20, 512)
+>>> out = decoder_layer(tgt, memory)
+```
+```python
+>>> decoder_layer = nn.TransformerDecoderLayer(d_model=512, nhead=8)
+>>> transformer_decoder = nn.TransformerDecoder(decoder_layer, num_layers=6)
+>>> memory = torch.rand(10, 32, 512)
+>>> tgt = torch.rand(20, 32, 512)
+>>> out = transformer_decoder(tgt, memory)
+```
+
+## nn.Sparse
+```
+Embedding：
+EmbeddingBag:句子级别的嵌入向量
+```
+
+```python
+import torch
+import torch.nn as nn
+# 创建一个词嵌入层，词汇表大小为 10，嵌入维度为 3
+embedding = nn.Embedding(num_embeddings=10, embedding_dim=3)
+# 输入为词索引
+input_indices = torch.tensor([1, 2, 3, 4])
+# 获取嵌入向量
+output = embedding(input_indices)
+print(output)
+```
+- `mode`：聚合方式，可以是 `'mean'`、`'sum'` 或 `'max'`。默认是 `'mean'`。
+```python
+import torch
+import torch.nn as nn
+
+# 创建一个嵌入袋层，词汇表大小为 10，嵌入维度为 3
+embedding_bag = nn.EmbeddingBag(num_embeddings=10, embedding_dim=3, mode='mean')
+
+# 输入为词索引和对应的 offsets
+input_indices = torch.tensor([1, 2, 3, 4])
+offsets = torch.tensor([0])  # 句子的起始位置
+
+# 获取嵌入向量并进行聚合
+output = embedding_bag(input_indices, offsets)
+print(output)
+```

@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0"><channel><title>teamtee</title><link>http://teamtee.top</link><description>这里是提姆提的新小屋，旧小屋可以去[这里](http://teamtee.top/teamtee/)</description><copyright>teamtee</copyright><docs>http://www.rssboard.org/rss-specification</docs><generator>python-feedgen</generator><image><url>https://github.githubassets.com/favicons/favicon.svg</url><title>avatar</title><link>http://teamtee.top</link></image><lastBuildDate>Tue, 11 Feb 2025 09:22:19 +0000</lastBuildDate><managingEditor>teamtee</managingEditor><ttl>60</ttl><webMaster>teamtee</webMaster><item><title>Qwen-Audio解读系列</title><link>http://teamtee.top/post/Qwen-Audio-jie-du-xi-lie.html</link><description># 简介
+<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0"><channel><title>teamtee</title><link>http://teamtee.top</link><description>这里是提姆提的新小屋，旧小屋可以去[这里](http://teamtee.top/teamtee/)</description><copyright>teamtee</copyright><docs>http://www.rssboard.org/rss-specification</docs><generator>python-feedgen</generator><image><url>https://github.githubassets.com/favicons/favicon.svg</url><title>avatar</title><link>http://teamtee.top</link></image><lastBuildDate>Wed, 12 Feb 2025 01:49:01 +0000</lastBuildDate><managingEditor>teamtee</managingEditor><ttl>60</ttl><webMaster>teamtee</webMaster><item><title>Qwen-Audio解读系列</title><link>http://teamtee.top/post/Qwen-Audio-jie-du-xi-lie.html</link><description># 简介
 
 Qwen-Audio是由阿里的Qwen团队开发的语音多模态大模型，分为Qwen-Audio，Qwen2-Audio,两者均具备强大的听觉能力，具备处理语音、音频事件和音乐歌曲的广泛能力
 
@@ -23,19 +23,20 @@ Qwen2-Audio
 - Sound：10k
 - Music：140k
 ## 模型
-Qwen-Audio：Qwen-Audio的实际结构为 Whisper-large-v2+MLP（堆叠）+Qwen-7B(具体型号没找到)
+Qwen-Audio：Qwen-Audio的实际结构为 Whisper-large-v2+线性层组合+Qwen-7B(具体型号没找到)
 
+线性层组合 = Linear3 * （（linear2* speech_tokens） * F.silu(linear1* speech_tokens)）
 ![Image](https://github.com/user-attachments/assets/bc90e9ea-03b4-4169-8e5c-2ceb00658cc1)
 
-Qwen2-Audio:实际结构为Whisperlarge-v3+平均池化层(长2)+MLP（没有堆叠）+Qwen-7B(具体型号没找到)
+Qwen2-Audio:实际结构为Whisperlarge-v3+平均池化层(长2)+线性层+Qwen-7B(具体型号没找到)
 ![Image](https://github.com/user-attachments/assets/6319993a-5269-4a2b-82cc-00ed24b690e7)
 ## 训练
 Qwen-audio:Qwen-Audio采用的是类似Whisper的训练框架，即为预测Token，并且Qwen-Audio只训练Whisper+MLP，不对语言模型进行微调，而且只是采用预训练，SFT得到的是Qwen-Audio-Chat
 
-Qwen2-audio:采用Pretrain+SFT+DPO，具体训练的部分没提到
+Qwen2-audio:采用Pretrain+SFT+DPO，具体训练的模型哪部分没提到
 - Pretrain：训练ASR+ACC
 - SFT：分为两类任务，语音分析任务：文本指令+语音，聊天任务：语音
-- DPO：
+- DPO：优化表现
 ## 结果
 Qwen-Audio
 

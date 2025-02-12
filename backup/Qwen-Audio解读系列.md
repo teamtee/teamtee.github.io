@@ -22,19 +22,20 @@ Qwen2-Audio
 - Sound：10k
 - Music：140k
 ## 模型
-Qwen-Audio：Qwen-Audio的实际结构为 Whisper-large-v2+MLP（堆叠）+Qwen-7B(具体型号没找到)
+Qwen-Audio：Qwen-Audio的实际结构为 Whisper-large-v2+线性层组合+Qwen-7B(具体型号没找到)
 
+线性层组合 = Linear3 * （（linear2* speech_tokens） * F.silu(linear1* speech_tokens)）
 ![Image](https://github.com/user-attachments/assets/bc90e9ea-03b4-4169-8e5c-2ceb00658cc1)
 
-Qwen2-Audio:实际结构为Whisperlarge-v3+平均池化层(长2)+MLP（没有堆叠）+Qwen-7B(具体型号没找到)
+Qwen2-Audio:实际结构为Whisperlarge-v3+平均池化层(长2)+线性层+Qwen-7B(具体型号没找到)
 ![Image](https://github.com/user-attachments/assets/6319993a-5269-4a2b-82cc-00ed24b690e7)
 ## 训练
 Qwen-audio:Qwen-Audio采用的是类似Whisper的训练框架，即为预测Token，并且Qwen-Audio只训练Whisper+MLP，不对语言模型进行微调，而且只是采用预训练，SFT得到的是Qwen-Audio-Chat
 
-Qwen2-audio:采用Pretrain+SFT+DPO，具体训练的部分没提到
+Qwen2-audio:采用Pretrain+SFT+DPO，具体训练的模型哪部分没提到
 - Pretrain：训练ASR+ACC
 - SFT：分为两类任务，语音分析任务：文本指令+语音，聊天任务：语音
-- DPO：
+- DPO：优化表现
 ## 结果
 Qwen-Audio
 

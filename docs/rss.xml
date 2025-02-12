@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0"><channel><title>teamtee</title><link>http://teamtee.top</link><description>这里是提姆提的新小屋，旧小屋可以去[这里](http://teamtee.top/teamtee/)</description><copyright>teamtee</copyright><docs>http://www.rssboard.org/rss-specification</docs><generator>python-feedgen</generator><image><url>https://github.githubassets.com/favicons/favicon.svg</url><title>avatar</title><link>http://teamtee.top</link></image><lastBuildDate>Wed, 12 Feb 2025 09:27:22 +0000</lastBuildDate><managingEditor>teamtee</managingEditor><ttl>60</ttl><webMaster>teamtee</webMaster><item><title>Pytorch分布式训练</title><link>http://teamtee.top/post/Pytorch-fen-bu-shi-xun-lian.html</link><description>[Pytorch分布式文章](https://zhuanlan.zhihu.com/p/178402798)-推荐
+<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0"><channel><title>teamtee</title><link>http://teamtee.top</link><description>这里是提姆提的新小屋，旧小屋可以去[这里](http://teamtee.top/teamtee/)</description><copyright>teamtee</copyright><docs>http://www.rssboard.org/rss-specification</docs><generator>python-feedgen</generator><image><url>https://github.githubassets.com/favicons/favicon.svg</url><title>avatar</title><link>http://teamtee.top</link></image><lastBuildDate>Wed, 12 Feb 2025 16:24:47 +0000</lastBuildDate><managingEditor>teamtee</managingEditor><ttl>60</ttl><webMaster>teamtee</webMaster><item><title>Pytorch分布式训练</title><link>http://teamtee.top/post/Pytorch-fen-bu-shi-xun-lian.html</link><description>[Pytorch分布式文章](https://zhuanlan.zhihu.com/p/178402798)-推荐
 # 简介
 
 PyTorch的分布式训练允许在多个GPU或多台机器上并行训练模型，显著提升训练速度和扩展性。</description><guid isPermaLink="true">http://teamtee.top/post/Pytorch-fen-bu-shi-xun-lian.html</guid><pubDate>Wed, 12 Feb 2025 09:26:55 +0000</pubDate></item><item><title>Pytorch库的使用torchaudio</title><link>http://teamtee.top/post/Pytorch-ku-de-shi-yong-torchaudio.html</link><description>
@@ -414,39 +414,7 @@ split -n 100 -d file &#13;
 - python -m torch.utils.collect_env&#13;
 收集形成详细的环境信息&#13;
 。</description><guid isPermaLink="true">http://teamtee.top/post/Linux-xia-chang-yong-hao-yong-ming-ling-zong-jie.html</guid><pubDate>Fri, 03 Jan 2025 08:35:44 +0000</pubDate></item><item><title>正则表达式</title><link>http://teamtee.top/post/zheng-ze-biao-da-shi.html</link><description># 简介&#13;
-正则表达式是一门在发展中逐渐形成的学问，因此存在历史版本的兼容性问题，有很多规范，现在我们使用的规范基本都和POSIX的规范一致。</description><guid isPermaLink="true">http://teamtee.top/post/zheng-ze-biao-da-shi.html</guid><pubDate>Fri, 03 Jan 2025 08:31:47 +0000</pubDate></item><item><title>Pytorch复习系列6:torch.ddp+fsdp</title><link>http://teamtee.top/post/Pytorch-fu-xi-xi-lie-6-torch.ddp%2Bfsdp.html</link><description>[分布式深度学习训练中DP,DDP,FSDP这三者之间的区别和联系是什么](https://blog.csdn.net/Flemington7/article/details/139031199)&#13;
-[Pytorch_DDP](https://pytorch.org/tutorials/beginner/ddp_series_theory.html)&#13;
-[PYtorch_DDP_start](https://pytorch.org/tutorials/intermediate/ddp_tutorial.html)&#13;
-[Pytorch_DP](https://pytorch.org/tutorials/beginner/blitz/data_parallel_tutorial.html)&#13;
-[Pytorch_FSDP](https://pytorch.ac.cn/tutorials/intermediate/FSDP_tutorial.html)&#13;
-[DDP的好的上手教程](https://www.cnblogs.com/gzyatcnblogs/articles/17946484)&#13;
-[DeepSpeed官网](https://docs.deepspeed.org.cn/en/latest/activation-checkpointing.html)&#13;
-[DeepSpeed上手好教程](https://www.tutorialspoint.com/deepspeed/index.htm)&#13;
-[有关Reduce\Gather\Scatter的概念文章](https://cloud.tencent.com/developer/article/2306663)&#13;
-[DDP深度解析好文](https://zhuanlan.zhihu.com/p/178402798)&#13;
-[有关FSDP内存消耗的绝世好文章](https://cloud.tencent.com/developer/article/2314837)&#13;
-## 原理&#13;
-&#13;
-有关分布式思想有两个概念：&#13;
-- DP：数据并行&#13;
-- MP：模型并行&#13;
-有关分布式的实践有三个概念&#13;
-- DP：数据并行(数据并行)&#13;
-- DDP：分布式数据并行(数据并行)&#13;
-- FSDP：完全共享式数据并行(数据并行+模型并行)&#13;
-有关分布式模型并行的论文产生了几个概念：&#13;
-- Zero0：不分片&#13;
-- ZeRO1：只把优化器状态进行分片&#13;
-- ZeRO2：对优化器状态 + 梯度进行分片&#13;
-- ZeRO3：对优化器状态 + 梯度 + 模型参数进行分片&#13;
-除此之外还有些概念&#13;
-- 流水线并行：pipline&#13;
-- 激活检查点：Activation checkpoint&#13;
-- 模型卸载：model offload&#13;
-&#13;
-## DDP&#13;
-&#13;
-DDP和DP的区别是，DP采用中心服务器来更新模型参数、收集梯度、分发新模型，DDP则完全采用分布式的做法，采用Ring-Reduce来同步梯度。</description><guid isPermaLink="true">http://teamtee.top/post/Pytorch-fu-xi-xi-lie-6-torch.ddp%2Bfsdp.html</guid><pubDate>Tue, 31 Dec 2024 07:15:53 +0000</pubDate></item><item><title>Pytorch复习系列5:torch.cuda.amp</title><link>http://teamtee.top/post/Pytorch-fu-xi-xi-lie-5-torch.cuda.amp.html</link><description># 前言&#13;
+正则表达式是一门在发展中逐渐形成的学问，因此存在历史版本的兼容性问题，有很多规范，现在我们使用的规范基本都和POSIX的规范一致。</description><guid isPermaLink="true">http://teamtee.top/post/zheng-ze-biao-da-shi.html</guid><pubDate>Fri, 03 Jan 2025 08:31:47 +0000</pubDate></item><item><title>Pytorch复习系列5:torch.cuda.amp</title><link>http://teamtee.top/post/Pytorch-fu-xi-xi-lie-5-torch.cuda.amp.html</link><description># 前言&#13;
 &#13;
 混合精度训练的核心观点：**采用更低精度的类型进行运算会使用更少的内存和更快的速度**&#13;
 必须采用Tensor core的核心显卡： GPU 中的 Tensor Core 天然支持 FP16 乘积的结果与 FP32 的累加&#13;

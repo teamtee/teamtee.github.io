@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html data-color-mode="light" data-dark-theme="dark_colorblind" data-light-theme="light" lang="zh-CN">
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link href='https://mirrors.sustech.edu.cn/cdnjs/ajax/libs/Primer/21.0.7/primer.css' rel='stylesheet' />
+    
+    <link rel="icon" href="https://github.githubassets.com/favicons/favicon.svg"><script>
+        let theme = localStorage.getItem("meek_theme") || "light";
+        document.documentElement.setAttribute("data-color-mode", theme);
+    </script>
+<meta name="description" content="[Pytorch分布式文章](https://zhuanlan.zhihu.com/p/178402798)-推荐
+# 简介
+
+PyTorch的分布式训练允许在多个GPU或多台机器上并行训练模型，显著提升训练速度和扩展性。">
+<meta property="og:title" content="Pytorch分布式训练">
+<meta property="og:description" content="[Pytorch分布式文章](https://zhuanlan.zhihu.com/p/178402798)-推荐
+# 简介
+
+PyTorch的分布式训练允许在多个GPU或多台机器上并行训练模型，显著提升训练速度和扩展性。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="http://teamtee.top/post/Pytorch-fen-bu-shi-xun-lian.html">
+<meta property="og:image" content="https://github.githubassets.com/favicons/favicon.svg">
+<title>Pytorch分布式训练</title>
+<link href="//unpkg.com/@wooorm/starry-night@2.1.1/style/both.css" rel="stylesheet" />
+
+
+</head>
+<style>
+body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;padding: 45px;font-size: 16px;font-family: sans-serif;line-height: 1.25;}
+#header{display:flex;padding-bottom:8px;border-bottom: 1px solid var(--borderColor-muted, var(--color-border-muted));margin-bottom: 16px;}
+#footer {margin-top:64px; text-align: center;font-size: small;}
+
+</style>
+
+<style>
+.postTitle{margin: auto 0;font-size:40px;font-weight:bold;}
+.title-right{display:flex;margin:auto 0 0 auto;}
+.title-right .circle{padding: 14px 16px;margin-right:8px;}
+#postBody{border-bottom: 1px solid var(--color-border-default);padding-bottom:36px;}
+#postBody hr{height:2px;}
+#cmButton{height:48px;margin-top:48px;}
+#comments{margin-top:64px;}
+.g-emoji{font-size:24px;}
+@media (max-width: 600px) {
+    body {padding: 8px;}
+    .postTitle{font-size:24px;}
+}
+.copy-feedback {
+    display: none;
+    position: absolute;
+    top: 10px;
+    right: 50px;
+    color: var(--color-fg-on-emphasis);
+    background-color: var(--color-fg-muted);
+    border-radius: 3px;
+    padding: 5px 8px;
+    font-size: 12px;
+}
+</style>
+
+
+
+
+<body>
+    <div id="header">
+<h1 class="postTitle">Pytorch分布式训练</h1>
+<div class="title-right">
+    <a href="http://teamtee.top" id="buttonHome" class="btn btn-invisible circle" title="首页">
+        <svg class="octicon" width="16" height="16">
+            <path id="pathHome" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+    
+    <a href="https://github.com/teamtee/teamtee.github.io/issues/14" target="_blank" class="btn btn-invisible circle" title="Issue">
+        <svg class="octicon" width="16" height="16">
+            <path id="pathIssue" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+    
+
+    <a class="btn btn-invisible circle" onclick="modeSwitch();" title="切换主题">
+        <svg class="octicon" width="16" height="16" >
+            <path id="themeSwitch" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+
+</div>
+</div>
+    <div id="content">
+<div class="markdown-body" id="postBody"><p><a href="https://zhuanlan.zhihu.com/p/178402798" rel="nofollow">Pytorch分布式文章</a>-推荐</p>
+<h1>简介</h1>
+<p>PyTorch的分布式训练允许在多个GPU或多台机器上并行训练模型，显著提升训练速度和扩展性。其核心是通过多进程协作处理数据、模型或优化任务。</p>
+<p>有关分布式思想有两个概念：</p>
+<ul>
+<li>DP：数据并行</li>
+<li>MP：模型并行<br>
+有关分布式的实践有三个概念</li>
+<li>DP：数据并行(数据并行)</li>
+<li>DDP：分布式数据并行(数据并行)</li>
+<li>FSDP：完全共享式数据并行(数据并行+模型并行)<br>
+有关分布式模型并行的论文产生了几个概念：</li>
+<li>Zero0：不分片</li>
+<li>ZeRO1：只把优化器状态进行分片</li>
+<li>ZeRO2：对优化器状态 + 梯度进行分片</li>
+<li>ZeRO3：对优化器状态 + 梯度 + 模型参数进行分片<br>
+除此之外还有些概念</li>
+<li>流水线并行：pipline</li>
+<li>激活检查点：Activation checkpoint</li>
+<li>模型卸载：model offload</li>
+</ul>
+<h1>原理</h1>
+<h2>DDP</h2>
+<h3>原理</h3>
+<p>DDP是数据并行</p>
+<p>参考:<a href="https://zhuanlan.zhihu.com/p/187610959" rel="nofollow">DDP系列第二篇：实现原理与源代码解析</a><br>
+DDP的做法如下：</p>
+<ul>
+<li>模型同步：建立通信后将模型同步</li>
+<li>参数分组：将参数分为多个组，每组称为Bucket</li>
+<li>模型训练：通过sampler使得模型训练的数据不重叠，训练获得梯度，标记对应参数为ready</li>
+<li>梯度同步：某个bucket所有参数ready后会进行异步的All-reduce，同步参数</li>
+</ul>
+<h3>内存分析</h3>
+<p>参考：<a href="https://cloud.tencent.com/developer/article/2314837" rel="nofollow">有关FSDP内存消耗的绝世好文章</a></p>
+<p><strong>全精度训练</strong>：float32加载和运算<br>
+假设模型的参数量为a，那么模型占有的内存为4a字节（float32）<br>
+静态内存：4a（模型参数）+4a（模型梯度）+8a（优化器的一阶优化和二阶优化系数)+4a(bucket 梯度) = 20a<br>
+<strong>半精度训练</strong>：float16加载和运算<br>
+静态内存：4a(模型参数)+2a（float16模型参数副本）+2a(模型梯度)+8a（优化器）+2a(bucket 梯度）=18a</p>
+<h2>FSDP</h2>
+<p>FSDP是模型并行+数据并行</p>
+<h3>原理</h3>
+<p>参考：<a href="https://www.microsoft.com/en-us/research/blog/zero-deepspeed-new-system-optimizations-enable-training-models-with-over-100-billion-parameters/" rel="nofollow">FSDP作者本人博客动画讲解的绝世好文章</a><br>
+参考：<a href="http://shiyanjun.cn/archives/2292.html" rel="nofollow">讲解文章</a><br>
+由动画我们可以发现FSDP的原理如下：<br>
+（1）每一个显卡储存部分参数分片：分片可以是模型参数、梯度、优化器状态<br>
+（2）在计算时，通过通信分发计算需要的分片（比如模型参数）<br>
+（3）收集结果到对应的显卡<br>
+（4）计算结束后丢弃不存储的分片</p>
+<h3>内存分析：</h3>
+<p>静态内存：<br>
+zero-1:4a+4a+(8a/n),节约一半内存<br>
+zero-2:4a+(12a/n),节约3/4内存<br>
+zero-3:16a/n,</p>
+<h1>实战</h1>
+<p>分布式训练通常涉及到下面的问题，</p>
+<ul>
+<li>采用哪一种<strong>分布式</strong>训练方法：DDP/FSDP：</li>
+<li>采用哪个<strong>框架</strong>进行分布式训练：Pytorch、Deepseed</li>
+<li>采用哪种方式进行训练：<strong>单机多卡/多机多卡</strong>：</li>
+</ul>
+<h2>Pytorch框架启动</h2>
+<p>参考：<a href="https://zhuanlan.zhihu.com/p/675464874" rel="nofollow">一文读懂分布式训练启动方式</a><br>
+Pytorch主要有三种启动方式，不同的启动方式的区别在于如何传递参数</p>
+<ul>
+<li>手动使用<code class="notranslate">torch.multiprocessing.spawn</code>：参数写死在代码里，不推荐</li>
+<li>使用<code class="notranslate">torch.distributed.launch</code>：参数通过函数参数传递，必须使用<code class="notranslate">argparse</code>，而且必须有一个<code class="notranslate">--local-rank</code>参数，不推荐</li>
+<li>使用<code class="notranslate">torchrun</code>：参数通过环境变量传递，推荐<br>
+分布式训练包含下面的概念</li>
+<li><code class="notranslate">node</code>:节点，即机器数，每个机器下面可以有多个进程</li>
+<li><code class="notranslate">world</code>: 总的进程数，通常一个进程一个GPU，因此可以理解为GPU数目</li>
+<li><code class="notranslate">rank</code>: 进程的唯一标识符id</li>
+<li><code class="notranslate">local_rank</code>:进程在本地（本机器）的唯一标识符</li>
+</ul>
+<h3>训练启动</h3>
+<p>训练启动就是提供必要的信息给程序</p>
+<h4>torch.distributed.launch</h4>
+<p>采用这种方式时，主程序必须有下面的代码,从参数中获取local_rank</p>
+<pre class="notranslate"><code class="notranslate">import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--local_rank", default=-1, type=int)
+args = parser.parse_args()
+local_rank = args.local_rank
+</code></pre>
+<p>单机多卡启动</p>
+<pre class="notranslate"><code class="notranslate">python -m torch.distributed.launch \
+    --nproc_per_node=4 \  # 每台机器的GPU数
+    --nnodes=1 \          # 总机器数
+    train_script.py
+</code></pre>
+<p>多机多卡启动</p>
+<pre class="notranslate"><code class="notranslate"># 主节点（假设IP为192.168.1.1）
+python -m torch.distributed.launch \
+    --nproc_per_node=4 \
+    --nnodes=2 \
+    --node_rank=0 \
+    --master_addr="192.168.1.1" \
+    --master_port=1234 \
+    train_script.py
+
+# 从节点
+python -m torch.distributed.launch \
+    --nproc_per_node=4 \
+    --nnodes=2 \
+    --node_rank=1 \
+    --master_addr="192.168.1.1" \
+    --master_port=1234 \
+    train_script.py
+</code></pre>
+<h4>torchrun</h4>
+<p>所有信息从环境变量中获得</p>
+<pre class="notranslate"><code class="notranslate">os.environ['RANK'] 可以得到在所有机器所有进程中当前GPU的排序
+os.environ['LOCAL_RANK'] 可以得到在当前node中当前GPU的排序
+os.environ['WORLD_SIZE'] 可以得到GPU的数量
+</code></pre>
+<p>单机多卡启动</p>
+<pre class="notranslate"><code class="notranslate">torchrun \
+	--nnodes 1 \
+	--nproc_per_node 8 \
+	--master_port=29502 \
+	train.py
+</code></pre>
+<p>多机多卡启动</p>
+<pre class="notranslate"><code class="notranslate"># 主节点（假设IP为192.168.1.1）
+torchrun \
+    --nproc_per_node=4 \
+    --nnodes=2 \
+    --node_rank=0 \
+    --master_addr="192.168.1.1" \
+    --master_port=1234 \
+    train_script.py
+
+# 从节点
+torchrun \
+    --nproc_per_node=4 \
+    --nnodes=2 \
+    --node_rank=1 \
+    --master_addr="192.168.1.1" \
+    --master_port=1234 \
+    train_script.py
+
+</code></pre>
+<h4>常用的训练启动环境变量</h4>
+<ul>
+<li><code class="notranslate">CUDA_VISIBLE_DEVICES</code>:<code class="notranslate">export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7</code> ：设置本机器可见的GPU，默认为全部设备，昇腾为<code class="notranslate">ASCEND_VISIBLE_DEVICES</code></li>
+<li><code class="notranslate">MASTER_ADDR</code>：主节点的IP地址</li>
+<li><code class="notranslate">MASTER_PORT</code>：主节点的通信端口</li>
+<li><code class="notranslate">TORCH_DISTRIBUTED_DEBUG</code>：可以设置为INFO或DETAIL，以输出更多调试信息</li>
+</ul>
+<h3>代码适配</h3>
+<p>分布式训练需要对原本的代码做三件事情</p>
+<h4>初始化通信</h4>
+<p><code class="notranslate">torch.distributed.init_process_group</code>用于初始化分布式通信后端，下面时一些参数</p>
+<ul>
+<li><strong><code class="notranslate">backend</code></strong>：指定分布式通信后端，例如<code class="notranslate">nccl</code>（适用于GPU）、<code class="notranslate">gloo</code>（适用于CPU或GPU）</li>
+<li><strong><code class="notranslate">init_method</code></strong>：指定初始化方法，可以是<code class="notranslate">env://</code>（默认）、<code class="notranslate">file://</code>或<code class="notranslate">tcp://</code>,指定为<code class="notranslate">env://</code>时会从环境变量中读取,当然没有显示指定下面的参数的情况下默认就是<code class="notranslate">env://</code>，而torchrun会设置环境变量</li>
+</ul>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">import</span> <span class="pl-s1">torch</span>.<span class="pl-s1">distributed</span> <span class="pl-k">as</span> <span class="pl-s1">dist</span>
+
+<span class="pl-k">def</span> <span class="pl-en">setup</span>(<span class="pl-s1">rank</span>,<span class="pl-s1">local_rank</span>, <span class="pl-s1">world_size</span>):
+    <span class="pl-s1">dist</span>.<span class="pl-c1">init_process_group</span>(
+        <span class="pl-s1">backend</span><span class="pl-c1">=</span><span class="pl-s">'nccl'</span>,    <span class="pl-c"># 使用NCCL后端（GPU场景）</span>
+        <span class="pl-s1">init_method</span><span class="pl-c1">=</span><span class="pl-s">'env://'</span>,  <span class="pl-c"># 从环境变量读取配置</span>
+        <span class="pl-s1">rank</span><span class="pl-c1">=</span><span class="pl-s1">rank</span>,
+        <span class="pl-s1">world_size</span><span class="pl-c1">=</span><span class="pl-s1">world_size</span>
+    )
+    <span class="pl-s1">torch</span>.<span class="pl-c1">cuda</span>.<span class="pl-c1">set_device</span>(<span class="pl-s1">local_rank</span>)  <span class="pl-c"># 绑定当前GPU</span>
+
+<span class="pl-c">## pytorch.distribute.launch</span>
+<span class="pl-k">import</span> <span class="pl-s1">argparse</span>
+<span class="pl-s1">parser</span> <span class="pl-c1">=</span> <span class="pl-s1">argparse</span>.<span class="pl-c1">ArgumentParser</span>()
+<span class="pl-s1">parser</span>.<span class="pl-c1">add_argument</span>(<span class="pl-s">"--rank"</span>, <span class="pl-s1">type</span><span class="pl-c1">=</span><span class="pl-s1">int</span>) 
+<span class="pl-s1">parser</span>.<span class="pl-c1">add_argument</span>(<span class="pl-s">"--local_rank"</span>, <span class="pl-s1">type</span><span class="pl-c1">=</span><span class="pl-s1">int</span>) 
+<span class="pl-s1">parser</span>.<span class="pl-c1">add_argument</span>(<span class="pl-s">"--world_size"</span>, <span class="pl-s1">type</span><span class="pl-c1">=</span><span class="pl-s1">int</span>)
+<span class="pl-s1">args</span> <span class="pl-c1">=</span> <span class="pl-s1">parser</span>.<span class="pl-c1">parse_args</span>()
+<span class="pl-s1">rank</span> <span class="pl-c1">=</span> <span class="pl-s1">args</span>.<span class="pl-c1">rank</span>
+<span class="pl-s1">local_rank</span> <span class="pl-c1">=</span> <span class="pl-s1">args</span>.<span class="pl-c1">local_rank</span>
+<span class="pl-s1">world_size</span> <span class="pl-c1">=</span> <span class="pl-s1">args</span>.<span class="pl-c1">world_size</span></pre></div>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-c">## torchrun</span>
+<span class="pl-k">import</span> <span class="pl-s1">os</span> 
+<span class="pl-s1">rank</span> <span class="pl-c1">=</span> <span class="pl-s1">os</span>.<span class="pl-c1">environ</span>[<span class="pl-s">'RANK'</span>] <span class="pl-s1">可以得到在所有机器所有进程中当前GPU的排序</span>
+<span class="pl-s1">local_rank</span> <span class="pl-c1">=</span> <span class="pl-s1">os</span>.<span class="pl-c1">environ</span>[<span class="pl-s">'LOCAL_RANK'</span>] <span class="pl-s1">可以得到在当前node中当前GPU的排序</span>
+<span class="pl-s1">world_size</span> <span class="pl-c1">=</span> <span class="pl-s1">os</span>.<span class="pl-c1">environ</span>[<span class="pl-s">'WORLD_SIZE'</span>] <span class="pl-s1">可以得到GPU的数量</span>
+
+<span class="pl-k">def</span> <span class="pl-en">setup</span>(<span class="pl-s1">rank</span>,<span class="pl-s1">local_rank</span>, <span class="pl-s1">world_size</span>):
+    <span class="pl-s1">dist</span>.<span class="pl-c1">init_process_group</span>(
+        <span class="pl-s1">backend</span><span class="pl-c1">=</span><span class="pl-s">'nccl'</span>,    <span class="pl-c"># 使用NCCL后端（GPU场景）</span>
+    )
+    <span class="pl-s1">torch</span>.<span class="pl-c1">cuda</span>.<span class="pl-c1">set_device</span>(<span class="pl-s1">local_rank</span>)  <span class="pl-c"># 绑定当前GPU</span>
+<span class="pl-en">setup</span>(<span class="pl-s1">rank</span>,<span class="pl-s1">world_size</span>)</pre></div>
+<h4>数据集适配</h4>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-c">## 数据集合</span>
+<span class="pl-c">## 构造</span>
+<span class="pl-s1">sampler</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">utils</span>.<span class="pl-c1">data</span>.<span class="pl-c1">distributed</span>.<span class="pl-c1">DistributedSampler</span>(<span class="pl-s1">dataset</span>)
+<span class="pl-s1">data_loader</span> <span class="pl-c1">=</span> <span class="pl-en">DataLoader</span>(<span class="pl-s1">dataset</span>, <span class="pl-s1">batch_size</span><span class="pl-c1">=</span><span class="pl-s1">batch_size</span>, <span class="pl-s1">sampler</span><span class="pl-c1">=</span><span class="pl-s1">sampler</span>)</pre></div>
+<h4>模型适配</h4>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">import</span> <span class="pl-s1">torch</span>.<span class="pl-s1">nn</span>.<span class="pl-s1">parallel</span>.<span class="pl-v">DistributedDataParallel</span> <span class="pl-k">as</span> <span class="pl-c1">DDP</span>
+<span class="pl-k">import</span> <span class="pl-s1">torch</span>.<span class="pl-s1">distributed</span>.<span class="pl-s1">fsdp</span> <span class="pl-v">FullyShardedDataParallel</span> <span class="pl-k">as</span> <span class="pl-c1">FSDP</span>
+
+<span class="pl-c">##  必须init_process_group 之后才可以调用 </span>
+<span class="pl-s1">model</span> <span class="pl-c1">=</span> <span class="pl-en">DDP</span>(<span class="pl-s1">model</span>, <span class="pl-s1">device_ids</span><span class="pl-c1">=</span>[<span class="pl-s1">local_rank</span>], <span class="pl-s1">output_device</span><span class="pl-c1">=</span><span class="pl-s1">local_rank</span>)
+<span class="pl-s1">model</span> <span class="pl-c1">=</span> <span class="pl-en">FSDP</span>(<span class="pl-s1">model</span>, <span class="pl-s1">device_id</span><span class="pl-c1">=</span><span class="pl-s1">local_rank</span>)
+
+<span class="pl-c">## 要在构造DDP model之后，才能用model初始化optimizer。</span>
+<span class="pl-s1">optimizer</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">optim</span>.<span class="pl-c1">SGD</span>(<span class="pl-s1">model</span>.<span class="pl-c1">parameters</span>(), <span class="pl-s1">lr</span><span class="pl-c1">=</span><span class="pl-c1">0.001</span>)</pre></div>
+<h5>DDP参数</h5>
+<ul>
+<li><code class="notranslate">find_unused_parameters</code>：
+<ul>
+<li>
+<ul>
+<li>如果设置为<code class="notranslate">True</code>，<code class="notranslate">DDP</code>会在每次迭代中检查模型中是否有未使用的参数。如果有未使用的参数，<code class="notranslate">DDP</code>会重新构建梯度图，以确保所有参数都能参与梯度计算。</li>
+</ul>
+</li>
+<li>这个参数在某些动态图模型（如某些Transformer模型）中非常有用，因为这些模型可能会在不同的迭代中使用不同的参数。</li>
+<li><strong>注意</strong>：启用<code class="notranslate">find_unused_parameters=True</code>可能会增加额外的计算开销，因此建议仅在需要时启用</li>
+</ul>
+</li>
+<li><code class="notranslate">gradient_as_bucket_view</code>：
+<ul>
+<li>
+<ul>
+<li>如果设置为<code class="notranslate">True</code>，<code class="notranslate">DDP</code>会将梯度视为一个连续的内存块（bucket），而不是分散的张量。这可以减少内存占用，提高通信效率。</li>
+</ul>
+</li>
+<li>从PyTorch 1.9开始支持，建议在支持的环境中启用。</li>
+</ul>
+</li>
+<li><code class="notranslate">broadcast_buffers</code>：
+<ul>
+<li>是否在每次迭代开始时广播模型的缓冲区（如<code class="notranslate">BatchNorm</code>的运行均值和方差）。如果模型中包含<code class="notranslate">BatchNorm</code>层，建议设置为<code class="notranslate">True</code></li>
+</ul>
+</li>
+</ul>
+<h5>FSDP 参数</h5>
+<p>我们在使用 FSDP 时，需要通过配置 auto_wrap_policy 参数来选择模型分片策略，不然显存优化只能达到 ZeRO-stage1 的水准</p>
+<ul>
+<li><code class="notranslate">auto_wrap_policy</code>
+<ul>
+<li>自动包装策略，用于决定哪些子模块需要被FSDP包装。<code class="notranslate">my_auto_wrapping_policy</code>是一个自定义的包装策略，通常基于子模块的参数数量或其他条件来决定是否对子模块进行分片</li>
+</ul>
+</li>
+</ul>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">import</span> <span class="pl-s1">functools</span>
+<span class="pl-k">from</span> <span class="pl-s1">torch</span>.<span class="pl-s1">distributed</span>.<span class="pl-s1">fsdp</span>.<span class="pl-s1">wrap</span> <span class="pl-k">import</span> <span class="pl-s1">size_based_auto_wrap_policy</span>
+<span class="pl-s1">my_auto_wrap_policy</span> <span class="pl-c1">=</span> <span class="pl-s1">functools</span>.<span class="pl-c1">partial</span>(
+        <span class="pl-s1">size_based_auto_wrap_policy</span>, <span class="pl-s1">min_num_params</span><span class="pl-c1">=</span><span class="pl-c1">20000</span>
+    )</pre></div>
+<ul>
+<li><code class="notranslate">cpu_offload</code>
+<ul>
+<li>是否将部分参数和梯度卸载到CPU，以进一步减少GPU显存占用。虽然会增加通信开销，但可以显著提高内存效率</li>
+</ul>
+</li>
+</ul>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">from</span> <span class="pl-s1">torch</span>.<span class="pl-s1">distributed</span>.<span class="pl-s1">fsdp</span> <span class="pl-k">import</span> <span class="pl-v">CPUOffload</span>
+<span class="pl-s1">cpu_offload</span> <span class="pl-c1">=</span> <span class="pl-en">CPUOffload</span>(<span class="pl-s1">offload_params</span><span class="pl-c1">=</span><span class="pl-c1">True</span>)</pre></div>
+<ul>
+<li><code class="notranslate">mixed_precision</code>
+<ul>
+<li>混合精度策略，用于控制模型的参数、梯度和优化器状态的精度。<code class="notranslate">mixed_precision_policy</code>是一个自定义的混合精度策略</li>
+</ul>
+</li>
+</ul>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">from</span> <span class="pl-s1">torch</span>.<span class="pl-s1">distributed</span>.<span class="pl-s1">fsdp</span>.<span class="pl-s1">mixed_precision</span> <span class="pl-k">import</span> <span class="pl-v">MixedPrecision</span>
+<span class="pl-s1">mixed_precision_policy</span> <span class="pl-c1">=</span> <span class="pl-en">MixedPrecision</span>(
+    <span class="pl-s1">param_dtype</span><span class="pl-c1">=</span><span class="pl-s1">torch</span>.<span class="pl-c1">float16</span>,  <span class="pl-c"># 模型参数的精度</span>
+    <span class="pl-s1">buffer_dtype</span><span class="pl-c1">=</span><span class="pl-s1">torch</span>.<span class="pl-c1">float16</span>,  <span class="pl-c"># 模型缓冲区的精度</span>
+    <span class="pl-s1">reduce_dtype</span><span class="pl-c1">=</span><span class="pl-s1">torch</span>.<span class="pl-c1">float16</span>,  <span class="pl-c"># 梯度归约的精度</span>
+    <span class="pl-s1">backward_dtype</span><span class="pl-c1">=</span><span class="pl-s1">torch</span>.<span class="pl-c1">float16</span>,  <span class="pl-c"># 反向传播的精度</span>
+    <span class="pl-s1">keep_low_precision_grads</span><span class="pl-c1">=</span><span class="pl-c1">True</span>  <span class="pl-c"># 是否保持梯度的低精度</span>
+)</pre></div>
+<ul>
+<li><code class="notranslate">sharding_strategy</code>
+<ul>
+<li>定义参数分片的策略，例如<code class="notranslate">FULL_SHARD</code>（完全分片）或<code class="notranslate">SHARD_GRAD_OP</code>（仅梯度分片）
+<ul>
+<li><code class="notranslate">ShardingStrategy.FULL_SHARD</code>:全分片</li>
+<li><code class="notranslate">ShardingStrategy.HYBRID_SHARD</code>：混合策略，介于全分片和下面的分片</li>
+<li><code class="notranslate">ShardingStrategy.SHARD_GRAD_OP</code>：仅对梯度和优化器状态进行分片</li>
+<li>`ShardingStrategy.NO_SHARD：不分片</li>
+<li></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">from</span> <span class="pl-s1">torch</span>.<span class="pl-s1">distributed</span>.<span class="pl-s1">fsdp</span> <span class="pl-k">import</span> <span class="pl-v">ShardingStrategy</span>
+<span class="pl-s1">sharding_strategy</span> <span class="pl-c1">=</span> <span class="pl-v">ShardingStrategy</span>.<span class="pl-c1">FULL_SHARD</span> 
+<span class="pl-s1">model</span> <span class="pl-c1">=</span> <span class="pl-en">FSDP</span>(
+    <span class="pl-s1">model</span>,
+    <span class="pl-s1">auto_wrap_policy</span><span class="pl-c1">=</span><span class="pl-s1">auto_wrap_policy</span>,
+    <span class="pl-s1">sharding_strategy</span><span class="pl-c1">=</span><span class="pl-s1">sharding_strategy</span>,
+    <span class="pl-s1">device_id</span><span class="pl-c1">=</span><span class="pl-s1">torch</span>.<span class="pl-c1">cuda</span>.<span class="pl-c1">current_device</span>()
+)</pre></div>
+<ul>
+<li><code class="notranslate">limit_all_gathers</code>:
+<ul>
+<li><strong>说明</strong>：是否限制所有<code class="notranslate">all_gather</code>操作。设置为<code class="notranslate">True</code>可以减少通信开销，但可能会影响某些操作的性能。</li>
+</ul>
+</li>
+<li><code class="notranslate">sync_module_states</code>:
+<ul>
+<li><strong>说明</strong>：是否在初始化时同步模块状态。在某些情况下，可以减少初始化时的通信开销。</li>
+</ul>
+</li>
+<li><code class="notranslate">param_init_fn</code>:
+<ul>
+<li><strong>说明</strong>：参数初始化函数。在某些情况下，可以用于在初始化时将模型参数移动到特定设备。</li>
+</ul>
+</li>
+</ul>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-s1">param_init_fn</span> <span class="pl-c1">=</span> <span class="pl-k">lambda</span> <span class="pl-s1">module</span>: <span class="pl-s1">module</span>.<span class="pl-c1">to_empty</span>(<span class="pl-s1">device</span><span class="pl-c1">=</span><span class="pl-s1">torch</span>.<span class="pl-c1">device</span>(<span class="pl-s">"cuda"</span>), <span class="pl-s1">recurse</span><span class="pl-c1">=</span><span class="pl-c1">False</span>)</pre></div>
+<h4>模型加载与保存</h4>
+<p>最好只加载一次</p>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">if</span> <span class="pl-s1">dist</span>.<span class="pl-c1">get_rank</span>() <span class="pl-c1">==</span> <span class="pl-c1">0</span>:
+    <span class="pl-s1">model</span>.<span class="pl-c1">load_state_dict</span>(<span class="pl-s1">torch</span>.<span class="pl-c1">load</span>(<span class="pl-s1">ckpt_path</span>))
+<span class="pl-k">if</span> <span class="pl-s1">dist</span>.<span class="pl-c1">get_rank</span>() <span class="pl-c1">==</span> <span class="pl-c1">0</span>:
+	<span class="pl-s1">torch</span>.<span class="pl-c1">save</span>(<span class="pl-s1">model</span>.<span class="pl-c1">module</span>.<span class="pl-c1">state_dict</span>(), <span class="pl-s">"%d.ckpt"</span> <span class="pl-c1">%</span> <span class="pl-s1">epoch</span>)</pre></div>
+<h3>分布式技巧</h3>
+<p><a href="https://zhuanlan.zhihu.com/p/250471767" rel="nofollow">DDP系列第三篇：实战与技巧</a></p>
+<h4>SyncBN</h4>
+<p>一句话总结，当前PyTorch SyncBN只在DDP单进程单卡模式中支持</p>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-c"># DDP init</span>
+<span class="pl-s1">dist</span>.<span class="pl-c1">init_process_group</span>(<span class="pl-s1">backend</span><span class="pl-c1">=</span><span class="pl-s">'nccl'</span>)
+
+<span class="pl-c"># 按照原来的方式定义模型，这里的BN都使用普通BN就行了。</span>
+<span class="pl-s1">model</span> <span class="pl-c1">=</span> <span class="pl-en">MyModel</span>()
+<span class="pl-c"># 引入SyncBN，这句代码，会将普通BN替换成SyncBN。</span>
+<span class="pl-s1">model</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">nn</span>.<span class="pl-c1">SyncBatchNorm</span>.<span class="pl-c1">convert_sync_batchnorm</span>(<span class="pl-s1">model</span>).<span class="pl-c1">to</span>(<span class="pl-s1">device</span>)
+
+<span class="pl-c"># 构造DDP模型</span>
+<span class="pl-s1">model</span> <span class="pl-c1">=</span> <span class="pl-en">DDP</span>(<span class="pl-s1">model</span>, <span class="pl-s1">device_ids</span><span class="pl-c1">=</span>[<span class="pl-s1">local_rank</span>], <span class="pl-s1">output_device</span><span class="pl-c1">=</span><span class="pl-s1">local_rank</span>)</pre></div>
+<h4>梯度累加</h4>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-s1">model</span> <span class="pl-c1">=</span> <span class="pl-en">DDP</span>(<span class="pl-s1">model</span>)
+
+<span class="pl-k">for</span> <span class="pl-s1">每次梯度累加循环</span>
+    <span class="pl-s1">optimizer</span>.<span class="pl-c1">zero_grad</span>()
+    <span class="pl-c"># 前accumulation_step-1个step，不进行梯度同步，累积梯度。</span>
+    <span class="pl-s1">for</span> _ <span class="pl-c1">in</span> <span class="pl-s1">range</span>(<span class="pl-c1">K</span><span class="pl-c1">-</span><span class="pl-c1">1</span>)::
+        <span class="pl-k">with</span> <span class="pl-s1">model</span>.<span class="pl-c1">no_sync</span>():
+            <span class="pl-s1">prediction</span> <span class="pl-c1">=</span> <span class="pl-s1">model</span>(<span class="pl-s1">data</span>)
+            <span class="pl-s1">loss</span> <span class="pl-c1">=</span> <span class="pl-s1">loss_fn</span>(<span class="pl-s1">prediction</span>, <span class="pl-s1">label</span>) <span class="pl-c1">/</span> <span class="pl-c1">K</span>
+            <span class="pl-s1">loss</span>.<span class="pl-c1">backward</span>()  <span class="pl-c"># 积累梯度，不应用梯度改变</span>
+    <span class="pl-c"># 第K个step，进行梯度同步</span>
+    <span class="pl-s1">prediction</span> <span class="pl-c1">=</span> <span class="pl-s1">model</span>(<span class="pl-s1">data</span>)
+    <span class="pl-s1">loss</span> <span class="pl-c1">=</span> <span class="pl-s1">loss_fn</span>(<span class="pl-s1">prediction</span>, <span class="pl-s1">label</span>) <span class="pl-c1">/</span> <span class="pl-c1">K</span>
+    <span class="pl-s1">loss</span>.<span class="pl-c1">backward</span>()  <span class="pl-c"># 积累梯度，不应用梯度改变</span>
+    <span class="pl-s1">optimizer</span>.<span class="pl-c1">step</span>()</pre></div>
+<h4>进程同步</h4>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-en">code_before</span>()
+<span class="pl-c"># 在这一步同步</span>
+<span class="pl-s1">torch</span>.<span class="pl-c1">distributed</span>.<span class="pl-c1">barrier</span>()
+<span class="pl-en">code_after</span>()</pre></div>
+<p><strong>在某个进程中执行A操作，其他进程等待其执行完成后再执行B操作：</strong></p>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">if</span> <span class="pl-s1">rank</span> <span class="pl-c1">==</span> <span class="pl-c1">0</span>:
+    <span class="pl-en">do_A</span>()
+    <span class="pl-s1">torch</span>.<span class="pl-c1">distributed</span>.<span class="pl-c1">barrier</span>()
+<span class="pl-k">else</span>:
+    <span class="pl-s1">torch</span>.<span class="pl-c1">distributed</span>.<span class="pl-c1">barrier</span>()
+    <span class="pl-en">do_B</span>()</pre></div>
+<h4>避免冗余输出</h4>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">import</span> <span class="pl-s1">logging</span>
+
+<span class="pl-c"># 给主要进程（rank=0）设置低输出等级，给其他进程设置高输出等级。</span>
+<span class="pl-s1">logging</span>.<span class="pl-c1">basicConfig</span>(<span class="pl-s1">level</span><span class="pl-c1">=</span><span class="pl-s1">logging</span>.<span class="pl-c1">INFO</span> <span class="pl-k">if</span> <span class="pl-s1">rank</span> <span class="pl-c1">in</span> [<span class="pl-c1">-</span><span class="pl-c1">1</span>, <span class="pl-c1">0</span>] <span class="pl-k">else</span> <span class="pl-s1">logging</span>.<span class="pl-c1">WARN</span>)
+<span class="pl-c"># 普通log，只会打印一次。</span>
+<span class="pl-s1">logging</span>.<span class="pl-c1">info</span>(<span class="pl-s">"This is an ordinary log."</span>)
+<span class="pl-c"># 危险的warning、error，无论在哪个进程，都会被打印出来，从而方便debug。</span>
+<span class="pl-s1">logging</span>.<span class="pl-c1">error</span>(<span class="pl-s">"This is a fatal log!"</span>)</pre></div>
+<h4>保证DDP性能：确保数据的一致性</h4>
+<p>我们需要给不同的进程分配不同的、固定的随机数种子：</p>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">def</span> <span class="pl-en">main</span>():
+    <span class="pl-s1">rank</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">distributed</span>.<span class="pl-c1">get_rank</span>()
+    <span class="pl-c"># 问题完美解决！</span>
+    <span class="pl-en">init_seeds</span>(<span class="pl-c1">1</span> <span class="pl-c1">+</span> <span class="pl-s1">rank</span>)</pre></div>
+<p>设置sampler的随机种子(实际种子为seed+epoch)</p>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">for</span> <span class="pl-s1">epoch</span> <span class="pl-c1">in</span> <span class="pl-s1">iterator</span>:
+    <span class="pl-c"># DDP：设置sampler的epoch，</span>
+    <span class="pl-c"># DistributedSampler需要这个来指定shuffle方式，</span>
+    <span class="pl-c"># 通过维持各个进程之间的相同随机数种子使不同进程能获得同样的shuffle效果。</span>
+    <span class="pl-s1">data_loader</span>.<span class="pl-c1">sampler</span>.<span class="pl-c1">set_epoch</span>(<span class="pl-s1">epoch</span>)</pre></div></div>
+<div style="font-size:small;margin-top:8px;float:right;">转载请注明出处</div>
+
+</div>
+    <div id="footer"><div id="footer1">Copyright © <span id="copyrightYear"></span> <a href="http://teamtee.top">teamtee</a></div>
+<div id="footer2">
+    <span id="runday"></span><span>Powered by <a href="https://meekdai.com/Gmeek.html" target="_blank">Gmeek</a></span>
+</div>
+
+<script>
+var now=new Date();
+document.getElementById("copyrightYear").innerHTML=now.getFullYear();
+
+if(""!=""){
+    var startSite=new Date("");
+    var diff=now.getTime()-startSite.getTime();
+    var diffDay=Math.floor(diff/(1000*60*60*24));
+    document.getElementById("runday").innerHTML="网站运行"+diffDay+"天"+" • ";
+}
+</script></div>
+</body>
+<script>
+var IconList={'sun': 'M8 10.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM8 12a4 4 0 100-8 4 4 0 000 8zM8 0a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0V.75A.75.75 0 018 0zm0 13a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 018 13zM2.343 2.343a.75.75 0 011.061 0l1.06 1.061a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zm9.193 9.193a.75.75 0 011.06 0l1.061 1.06a.75.75 0 01-1.06 1.061l-1.061-1.06a.75.75 0 010-1.061zM16 8a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0116 8zM3 8a.75.75 0 01-.75.75H.75a.75.75 0 010-1.5h1.5A.75.75 0 013 8zm10.657-5.657a.75.75 0 010 1.061l-1.061 1.06a.75.75 0 11-1.06-1.06l1.06-1.06a.75.75 0 011.06 0zm-9.193 9.193a.75.75 0 010 1.06l-1.06 1.061a.75.75 0 11-1.061-1.06l1.06-1.061a.75.75 0 011.061 0z', 'moon': 'M9.598 1.591a.75.75 0 01.785-.175 7 7 0 11-8.967 8.967.75.75 0 01.961-.96 5.5 5.5 0 007.046-7.046.75.75 0 01.175-.786zm1.616 1.945a7 7 0 01-7.678 7.678 5.5 5.5 0 107.678-7.678z', 'sync': 'M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z', 'home': 'M6.906.664a1.749 1.749 0 0 1 2.187 0l5.25 4.2c.415.332.657.835.657 1.367v7.019A1.75 1.75 0 0 1 13.25 15h-3.5a.75.75 0 0 1-.75-.75V9H7v5.25a.75.75 0 0 1-.75.75h-3.5A1.75 1.75 0 0 1 1 13.25V6.23c0-.531.242-1.034.657-1.366l5.25-4.2Zm1.25 1.171a.25.25 0 0 0-.312 0l-5.25 4.2a.25.25 0 0 0-.094.196v7.019c0 .138.112.25.25.25H5.5V8.25a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v5.25h2.75a.25.25 0 0 0 .25-.25V6.23a.25.25 0 0 0-.094-.195Z', 'github': 'M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z', 'copy': 'M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z', 'check': 'M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z'};
+var utterancesLoad=0;
+
+let themeSettings={
+    "dark": ["dark","moon","#00f0ff","dark-blue"],
+    "light": ["light","sun","#ff5000","github-light"],
+    "auto": ["auto","sync","","preferred-color-scheme"]
+};
+function changeTheme(mode, icon, color, utheme){
+    document.documentElement.setAttribute("data-color-mode",mode);
+    document.getElementById("themeSwitch").setAttribute("d",value=IconList[icon]);
+    document.getElementById("themeSwitch").parentNode.style.color=color;
+    if(utterancesLoad==1){utterancesTheme(utheme);}
+}
+function modeSwitch(){
+    let currentMode=document.documentElement.getAttribute('data-color-mode');
+    let newMode = currentMode === "light" ? "dark" : currentMode === "dark" ? "auto" : "light";
+    localStorage.setItem("meek_theme", newMode);
+    if(themeSettings[newMode]){
+        changeTheme(...themeSettings[newMode]);
+    }
+}
+function utterancesTheme(theme){
+    const message={type:'set-theme',theme: theme};
+    const iframe=document.getElementsByClassName('utterances-frame')[0];
+    iframe.contentWindow.postMessage(message,'https://utteranc.es');
+}
+if(themeSettings[theme]){changeTheme(...themeSettings[theme]);}
+console.log("\n %c Gmeek last https://github.com/Meekdai/Gmeek \n","padding:5px 0;background:#02d81d;color:#fff");
+</script>
+
+<script>
+document.getElementById("pathHome").setAttribute("d",IconList["home"]);
+document.getElementById("pathIssue").setAttribute("d",IconList["github"]);
+
+
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    const createClipboardHTML = (codeContent, additionalClasses = '') => `
+        <pre class="notranslate"><code class="notranslate">${codeContent}</code></pre>
+        <div class="clipboard-container position-absolute right-0 top-0 ${additionalClasses}">
+            <clipboard-copy class="ClipboardButton btn m-2 p-0" role="button" style="display: inherit;">
+                <svg height="16" width="16" class="octicon octicon-copy m-2"><path d="${IconList["copy"]}"></path></svg>
+                <svg height="16" width="16" class="octicon octicon-check color-fg-success m-2 d-none"><path d="${IconList["check"]}"></path></svg>
+            </clipboard-copy>
+            <div class="copy-feedback">Copied!</div>
+        </div>
+    `;
+
+    const handleCodeElements = (selector = '') => {
+        document.querySelectorAll(selector).forEach(codeElement => {
+            const codeContent = codeElement.innerHTML;
+            const newStructure = document.createElement('div');
+            newStructure.className = 'snippet-clipboard-content position-relative overflow-auto';
+            newStructure.innerHTML = createClipboardHTML(codeContent);
+
+            const parentElement = codeElement.parentElement;
+            if (selector.includes('highlight')) {
+                parentElement.insertBefore(newStructure, codeElement.nextSibling);
+                parentElement.removeChild(codeElement);
+            } else {
+                parentElement.parentElement.replaceChild(newStructure, parentElement);
+            }
+        });
+    };
+
+    handleCodeElements('pre.notranslate > code.notranslate');
+    handleCodeElements('div.highlight > pre.notranslate');
+
+    let currentFeedback = null;
+    document.querySelectorAll('clipboard-copy').forEach(copyButton => {
+        copyButton.addEventListener('click', () => {
+            const codeContent = copyButton.closest('.snippet-clipboard-content').innerText;
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = codeContent;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            const copyIcon = copyButton.querySelector('.octicon-copy');
+            const checkIcon = copyButton.querySelector('.octicon-check');
+            const copyFeedback = copyButton.nextElementSibling;
+
+            if (currentFeedback && currentFeedback !== copyFeedback) {currentFeedback.style.display = 'none';}
+            currentFeedback = copyFeedback;
+
+            copyIcon.classList.add('d-none');
+            checkIcon.classList.remove('d-none');
+            copyFeedback.style.display = 'block';
+            copyButton.style.borderColor = 'var(--color-success-fg)';
+
+            setTimeout(() => {
+                copyIcon.classList.remove('d-none');
+                checkIcon.classList.add('d-none');
+                copyFeedback.style.display = 'none';
+                copyButton.style.borderColor = '';
+            }, 2000);
+        });
+    });
+});
+
+</script>
+
+
+</html>

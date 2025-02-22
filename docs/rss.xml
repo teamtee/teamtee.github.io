@@ -1,5 +1,38 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0"><channel><title>teamtee</title><link>http://teamtee.top</link><description>这里是提姆提的新小屋，旧小屋可以去[这里](http://teamtee.top/teamtee/)</description><copyright>teamtee</copyright><docs>http://www.rssboard.org/rss-specification</docs><generator>python-feedgen</generator><image><url>https://github.githubassets.com/favicons/favicon.svg</url><title>avatar</title><link>http://teamtee.top</link></image><lastBuildDate>Wed, 12 Feb 2025 16:24:47 +0000</lastBuildDate><managingEditor>teamtee</managingEditor><ttl>60</ttl><webMaster>teamtee</webMaster><item><title>Pytorch分布式训练</title><link>http://teamtee.top/post/Pytorch-fen-bu-shi-xun-lian.html</link><description>[Pytorch分布式文章](https://zhuanlan.zhihu.com/p/178402798)-推荐
+<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0"><channel><title>teamtee</title><link>http://teamtee.top</link><description>这里是提姆提的新小屋，旧小屋可以去[这里](http://teamtee.top/teamtee/)</description><copyright>teamtee</copyright><docs>http://www.rssboard.org/rss-specification</docs><generator>python-feedgen</generator><image><url>https://github.githubassets.com/favicons/favicon.svg</url><title>avatar</title><link>http://teamtee.top</link></image><lastBuildDate>Sat, 22 Feb 2025 07:21:13 +0000</lastBuildDate><managingEditor>teamtee</managingEditor><ttl>60</ttl><webMaster>teamtee</webMaster><item><title>Qwen-Audio解读系列 2.源码与Pytorch</title><link>http://teamtee.top/post/Qwen-Audio-jie-du-xi-lie-%202.-yuan-ma-yu-Pytorch.html</link><description>
+## Auto类
+[参考](https://huggingface.co/docs/transformers/model_doc/auto)
+transformers提供了一系列的自动函数类，他们提供了通用的加载方式
+- AutoConfig
+- AutoTokenizer
+- AutoFeatureExtractor
+- AutoProcessor
+- AutoModel
+- AutoModelFor...
+	- AutoModelForCausalLM
+	- ...
+其中值得一提的是
+- AutoModel和AutoModelFor...的区别是是否包含输出头，比如最后将输出转化为词表大小来输出
+```plaintext
+(lm_head): Linear(in_features=3584, out_features=152064, bias=False)
+```
+- AutoModel和AutoModelFor...的加载模型两种方式
+```
+model = AutoModel.from_pretrained(checkpoint) # 加载权重
+model = AutoModel.from_config(config) # 不加载权重
+```
+实际上我们可能会采用更加具体的模型，比如`Qwen2AudioForConditionalGeneration`
+
+## 实例模型
+### PreTrainedModel
+
+PreTrainedModel 是一个抽象类，定义了必须的操作
+
+```
+class PreTrainedModel(nn.Module, ModuleUtilsMixin, GenerationMixin, PushToHubMixin, PeftAdapterMixin):
+```
+ **`nn.Module`**：
+    - PyTorch 的基础模块类，为模型提供了基本的神经网络功能，例如参数管理、前向传播等。</description><guid isPermaLink="true">http://teamtee.top/post/Qwen-Audio-jie-du-xi-lie-%202.-yuan-ma-yu-Pytorch.html</guid><pubDate>Sat, 22 Feb 2025 07:20:46 +0000</pubDate></item><item><title>Pytorch分布式训练</title><link>http://teamtee.top/post/Pytorch-fen-bu-shi-xun-lian.html</link><description>[Pytorch分布式文章](https://zhuanlan.zhihu.com/p/178402798)-推荐
 # 简介
 
 PyTorch的分布式训练允许在多个GPU或多台机器上并行训练模型，显著提升训练速度和扩展性。</description><guid isPermaLink="true">http://teamtee.top/post/Pytorch-fen-bu-shi-xun-lian.html</guid><pubDate>Wed, 12 Feb 2025 09:26:55 +0000</pubDate></item><item><title>Pytorch库的使用torchaudio</title><link>http://teamtee.top/post/Pytorch-ku-de-shi-yong-torchaudio.html</link><description>

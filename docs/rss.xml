@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0"><channel><title>teamtee</title><link>http://teamtee.top</link><description>这里是提姆提的新小屋，旧小屋可以去[这里](http://teamtee.top/teamtee/)</description><copyright>teamtee</copyright><docs>http://www.rssboard.org/rss-specification</docs><generator>python-feedgen</generator><image><url>https://github.githubassets.com/favicons/favicon.svg</url><title>avatar</title><link>http://teamtee.top</link></image><lastBuildDate>Sat, 22 Feb 2025 07:21:13 +0000</lastBuildDate><managingEditor>teamtee</managingEditor><ttl>60</ttl><webMaster>teamtee</webMaster><item><title>Qwen-Audio解读系列 2.源码与Pytorch</title><link>http://teamtee.top/post/Qwen-Audio-jie-du-xi-lie-%202.-yuan-ma-yu-Pytorch.html</link><description>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0"><channel><title>teamtee</title><link>http://teamtee.top</link><description>这里是提姆提的新小屋，旧小屋可以去[这里](http://teamtee.top/teamtee/)</description><copyright>teamtee</copyright><docs>http://www.rssboard.org/rss-specification</docs><generator>python-feedgen</generator><image><url>https://github.githubassets.com/favicons/favicon.svg</url><title>avatar</title><link>http://teamtee.top</link></image><lastBuildDate>Sat, 22 Feb 2025 07:25:32 +0000</lastBuildDate><managingEditor>teamtee</managingEditor><ttl>60</ttl><webMaster>teamtee</webMaster><item><title>Qwen-Audio解读系列 2.源码与Pytorch</title><link>http://teamtee.top/post/Qwen-Audio-jie-du-xi-lie-%202.-yuan-ma-yu-Pytorch.html</link><description>
 ## Auto类
 [参考](https://huggingface.co/docs/transformers/model_doc/auto)
 transformers提供了一系列的自动函数类，他们提供了通用的加载方式
@@ -369,7 +369,7 @@ enhanced_waveform = torchaudio.transforms.InverseSpectrogram(n_fft=512, hop_leng
 
 # 7. 保存增强后的音频
 torchaudio.save('rtf_mvdr_output.wav', enhanced_waveform, sample_rate)
-```。</description><guid isPermaLink="true">http://teamtee.top/post/Pytorch-ku-de-shi-yong-torchaudio.html</guid><pubDate>Wed, 12 Feb 2025 02:46:40 +0000</pubDate></item><item><title>Qwen-Audio解读系列</title><link>http://teamtee.top/post/Qwen-Audio-jie-du-xi-lie.html</link><description># 简介
+```。</description><guid isPermaLink="true">http://teamtee.top/post/Pytorch-ku-de-shi-yong-torchaudio.html</guid><pubDate>Wed, 12 Feb 2025 02:46:40 +0000</pubDate></item><item><title>Qwen-Audio解读系列 1.簡介</title><link>http://teamtee.top/post/Qwen-Audio-jie-du-xi-lie-%201.-jian-jie.html</link><description># 简介
 
 Qwen-Audio是由阿里的Qwen团队开发的语音多模态大模型，分为Qwen-Audio，Qwen2-Audio,两者均具备强大的听觉能力，具备处理语音、音频事件和音乐歌曲的广泛能力
 
@@ -414,7 +414,7 @@ Qwen-Audio
 
 Qwen2-Audio
 
-![Image](https://github.com/user-attachments/assets/ee9a8c6c-42c7-4e6c-a6f9-abff8216c6b1)。</description><guid isPermaLink="true">http://teamtee.top/post/Qwen-Audio-jie-du-xi-lie.html</guid><pubDate>Tue, 11 Feb 2025 09:21:53 +0000</pubDate></item><item><title>Linux下常用好用命令总结</title><link>http://teamtee.top/post/Linux-xia-chang-yong-hao-yong-ming-ling-zong-jie.html</link><description>命令行的参数繁多，但是我们常常使用的不过寥寥，因此我将常用的命令行用法罗列如下&#13;
+![Image](https://github.com/user-attachments/assets/ee9a8c6c-42c7-4e6c-a6f9-abff8216c6b1)。</description><guid isPermaLink="true">http://teamtee.top/post/Qwen-Audio-jie-du-xi-lie-%201.-jian-jie.html</guid><pubDate>Tue, 11 Feb 2025 09:21:53 +0000</pubDate></item><item><title>Linux下常用好用命令总结</title><link>http://teamtee.top/post/Linux-xia-chang-yong-hao-yong-ming-ling-zong-jie.html</link><description>命令行的参数繁多，但是我们常常使用的不过寥寥，因此我将常用的命令行用法罗列如下&#13;
 ## Linux&#13;
 ## find&#13;
 &#13;

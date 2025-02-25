@@ -403,10 +403,43 @@ for epoch in iterator:
 [参考教程](https://github.com/bobo0810/LearnDeepSpeed)
 [参考示例](https://github.com/deepspeedai/DeepSpeedExamples/blob/master/training/pipeline_parallelism/train.py)
 [绝对入门的好教程](https://www.tutorialspoint.com/deepspeed/deepspeed-optimizer.htm)
-
+#### 启动
 Deepspeed会同时设置环境变量和传递参数
 ```
 deepspeed --num_nodes 2 --num_gpus 8 train.py
+```
+#### 代码适配
+##### 初始化通信
+
+```
+deepspeed.init_distributed(
+dist_backend='hccl', # 使用NCCL后端（GPU场景）
+)
+```
+##### 适配模型
+
+```python
+    model.to(device)
+    parameters = filter(lambda x:x.requires_grad,model.parameters())
+    model_engine, optimizer, _, scheduler = deepspeed.initialize(
+    config=cfg.train.deepspeed_config,
+    model=model,
+    model_parameters=parameters
+)
+```
+##### 模型训练
+```
+model_engine.train()
+model_engine.backward(loss)
+model_engine.step()
+```
+##### 模型保存
+```python
+client_sd = {"step": step, "epoch": epoch}
+model_engine.save_checkpoint(args.save_dir, ckpt_id=step, client_sd=client_sd)
+
+# Load checkpoint
+_, client_sd = model_engine.load_checkpoint(args.load_dir, args.ckpt_id)
 ```
 #### 配置
 

@@ -479,9 +479,35 @@ torchrun \
 <p><a href="https://github.com/bobo0810/LearnDeepSpeed">参考教程</a><br>
 <a href="https://github.com/deepspeedai/DeepSpeedExamples/blob/master/training/pipeline_parallelism/train.py">参考示例</a><br>
 <a href="https://www.tutorialspoint.com/deepspeed/deepspeed-optimizer.htm" rel="nofollow">绝对入门的好教程</a></p>
+<h4>启动</h4>
 <p>Deepspeed会同时设置环境变量和传递参数</p>
 <pre class="notranslate"><code class="notranslate">deepspeed --num_nodes 2 --num_gpus 8 train.py
 </code></pre>
+<h4>代码适配</h4>
+<h5>初始化通信</h5>
+<pre class="notranslate"><code class="notranslate">deepspeed.init_distributed(
+dist_backend='hccl', # 使用NCCL后端（GPU场景）
+)
+</code></pre>
+<h5>适配模型</h5>
+<div class="highlight highlight-source-python"><pre class="notranslate">    <span class="pl-s1">model</span>.<span class="pl-c1">to</span>(<span class="pl-s1">device</span>)
+    <span class="pl-s1">parameters</span> <span class="pl-c1">=</span> <span class="pl-en">filter</span>(<span class="pl-k">lambda</span> <span class="pl-s1">x</span>:<span class="pl-s1">x</span>.<span class="pl-c1">requires_grad</span>,<span class="pl-s1">model</span>.<span class="pl-c1">parameters</span>())
+    <span class="pl-s1">model_engine</span>, <span class="pl-s1">optimizer</span>, <span class="pl-s1">_</span>, <span class="pl-s1">scheduler</span> <span class="pl-c1">=</span> <span class="pl-s1">deepspeed</span>.<span class="pl-c1">initialize</span>(
+    <span class="pl-s1">config</span><span class="pl-c1">=</span><span class="pl-s1">cfg</span>.<span class="pl-c1">train</span>.<span class="pl-c1">deepspeed_config</span>,
+    <span class="pl-s1">model</span><span class="pl-c1">=</span><span class="pl-s1">model</span>,
+    <span class="pl-s1">model_parameters</span><span class="pl-c1">=</span><span class="pl-s1">parameters</span>
+)</pre></div>
+<h5>模型训练</h5>
+<pre class="notranslate"><code class="notranslate">model_engine.train()
+model_engine.backward(loss)
+model_engine.step()
+</code></pre>
+<h5>模型保存</h5>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-s1">client_sd</span> <span class="pl-c1">=</span> {<span class="pl-s">"step"</span>: <span class="pl-s1">step</span>, <span class="pl-s">"epoch"</span>: <span class="pl-s1">epoch</span>}
+<span class="pl-s1">model_engine</span>.<span class="pl-c1">save_checkpoint</span>(<span class="pl-s1">args</span>.<span class="pl-c1">save_dir</span>, <span class="pl-s1">ckpt_id</span><span class="pl-c1">=</span><span class="pl-s1">step</span>, <span class="pl-s1">client_sd</span><span class="pl-c1">=</span><span class="pl-s1">client_sd</span>)
+
+<span class="pl-c"># Load checkpoint</span>
+<span class="pl-s1">_</span>, <span class="pl-s1">client_sd</span> <span class="pl-c1">=</span> <span class="pl-s1">model_engine</span>.<span class="pl-c1">load_checkpoint</span>(<span class="pl-s1">args</span>.<span class="pl-c1">load_dir</span>, <span class="pl-s1">args</span>.<span class="pl-c1">ckpt_id</span>)</pre></div>
 <h4>配置</h4>
 <p><a href="https://zhuanlan.zhihu.com/p/654925843" rel="nofollow">参考</a></p>
 <div class="highlight highlight-source-python"><pre class="notranslate">{

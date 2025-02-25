@@ -160,6 +160,8 @@ torchrun \
 - `MASTER_ADDR`：主节点的IP地址
 - `MASTER_PORT`：主节点的通信端口
 - `TORCH_DISTRIBUTED_DEBUG`：可以设置为INFO或DETAIL，以输出更多调试信息
+####  启动实例
+[容器多机多卡训练](https://www.cnblogs.com/syw-home/p/18073062)
 ### 代码适配
 分布式训练需要对原本的代码做三件事情
 #### 初始化通信
@@ -195,9 +197,9 @@ world_size = args.world_size
 ```python
 ## torchrun
 import os 
-rank = os.environ['RANK'] 可以得到在所有机器所有进程中当前GPU的排序
-local_rank = os.environ['LOCAL_RANK'] 可以得到在当前node中当前GPU的排序
-world_size = os.environ['WORLD_SIZE'] 可以得到GPU的数量
+rank = int(os.environ['RANK'] )
+local_rank = int(os.environ['LOCAL_RANK'])
+world_size = int(os.environ['WORLD_SIZE'])
 
 def setup(rank,local_rank, world_size):
     dist.init_process_group(
@@ -217,11 +219,12 @@ data_loader = DataLoader(dataset, batch_size=batch_size, sampler=sampler)
 
 ```python
 
-import torch.nn.parallel.DistributedDataParallel as DDP
-import torch.distributed.fsdp FullyShardedDataParallel as FSDP
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 
 ##  必须init_process_group 之后才可以调用 
-model = DDP(model, device_ids=[local_rank], output_device=local_rank)
+model.to(device)
+model = DDP(model, device_ids=[local_rank])
 model = FSDP(model, device_id=local_rank)
 
 ## 要在构造DDP model之后，才能用model初始化optimizer。
@@ -240,7 +243,7 @@ optimizer = torch.optim.SGD(model.parameters(), lr=0.001)
 	- 从PyTorch 1.9开始支持，建议在支持的环境中启用。
 - `broadcast_buffers`：
 	- 是否在每次迭代开始时广播模型的缓冲区（如`BatchNorm`的运行均值和方差）。如果模型中包含`BatchNorm`层，建议设置为`True`
-##### FSDP 参数
+##### FSDP 参数 (注意，我在使用过程中一直没有调通)
 我们在使用 FSDP 时，需要通过配置 auto_wrap_policy 参数来选择模型分片策略，不然显存优化只能达到 ZeRO-stage1 的水准
 - `auto_wrap_policy`
 	- 自动包装策略，用于决定哪些子模块需要被FSDP包装。`my_auto_wrapping_policy`是一个自定义的包装策略，通常基于子模块的参数数量或其他条件来决定是否对子模块进行分片
@@ -284,7 +287,7 @@ model = FSDP(
     model,
     auto_wrap_policy=auto_wrap_policy,
     sharding_strategy=sharding_strategy,
-    device_id=torch.cuda.current_device()
+    device_id=torch.cuda.current_device(),
 )
 ```
 
@@ -394,4 +397,331 @@ for epoch in iterator:
     # DistributedSampler需要这个来指定shuffle方式，
     # 通过维持各个进程之间的相同随机数种子使不同进程能获得同样的shuffle效果。
     data_loader.sampler.set_epoch(epoch)
+```
+
+## Deepspeed框架启动
+[参考教程](https://github.com/bobo0810/LearnDeepSpeed)
+[参考示例](https://github.com/deepspeedai/DeepSpeedExamples/blob/master/training/pipeline_parallelism/train.py)
+[绝对入门的好教程](https://www.tutorialspoint.com/deepspeed/deepspeed-optimizer.htm)
+
+Deepspeed会同时设置环境变量和传递参数
+```
+deepspeed --num_nodes 2 --num_gpus 8 train.py
+```
+#### 配置
+
+[参考](https://zhuanlan.zhihu.com/p/654925843)
+```python
+{
+    "train_batch_size": 32,
+    "gradient_accumulation_steps": 2,
+    "fp16": {
+        "enabled": true
+    },
+    "optimizer": {
+        "type": "AdamW",
+        "params": {
+            "lr": 0.001,
+            "betas": [0.9, 0.999],
+            "eps": 1e-08,
+            "weight_decay": 0.01
+        }
+    },
+    "scheduler": {
+        "type": "WarmupLR",
+        "params": {
+            "warmup_min_lr": 0.0,
+            "warmup_max_lr": 0.001,
+            "warmup_num_steps": 100
+        }
+    },
+    "zero_optimization": {
+        "stage": 2,
+        "contiguous_gradients": true,
+        "reduce_scatter": true,
+        "allgather_partitions": true
+    }
+}
+```
+##### 混合精度
+```python
+"fp16": {
+  "enabled": true,
+  "loss_scale": 0,
+  "loss_scale_window": 1000,
+  "hysteresis": 2,
+  "min_loss_scale": 1
+}
+"bf16": { "enabled": true }
+```
+#### 保存和加载
+```python
+ # 保存PP模型
+    save_dir = "./checkpoint"
+    engine.save_checkpoint(save_dir=save_dir)
+    # ---------------------- 模型加载 ----------------------
+    print("加载模型")
+    dist.barrier()
+    engine.load_checkpoint(
+        save_dir, tag=tag, load_optimizer_states=False, load_lr_scheduler_states=False
+    )
+    dist.barrier()
+```
+#### 示例
+##### 数据并行
+```python
+import torch
+import deepspeed
+
+# Define a simple neural network model
+class SimpleModel(torch.nn.Module):
+    def __init__(self):
+        super(SimpleModel, self).__init__()
+        self.fc1 = torch.nn.Linear(784, 128)
+        self.fc2 = torch.nn.Linear(128, 10)
+
+    def forward(self, x):
+        x = torch.relu(self.fc1(x))
+        return self.fc2(x)
+
+# Initialize DeepSpeed configuration
+deepspeed_config = {
+    "train_batch_size": 64,
+    "optimizer": {
+        "type": "Adam",
+        "params": {
+            "lr": 0.001
+        }
+    }
+}
+
+# Initialize model
+model = SimpleModel()
+
+# Initialize DeepSpeed for distributed data parallelity
+model_engine, optimizer, _, _ = deepspeed.initialize(
+    config=deepspeed_config,
+    model=model
+)
+
+# Dummy data
+inputs = torch.randn(64, 784)
+labels = torch.randint(0, 10, (64,))
+
+# Forward pass
+outputs = model_engine(inputs)
+loss = torch.nn.functional.cross_entropy(outputs, labels)
+
+# Backward pass and optimization
+model_engine.backward(loss)
+model_engine.step()
+```
+
+##### Pipeline
+[参考](https://github.com/bobo0810/LearnDeepSpeed/blob/main/training/pipeline_parallelism/train.py)
+下面是一个最小的流水线示例，
+```python
+import torch
+import deepspeed
+from deepspeed.pipe import PipelineModule, LayerSpec
+import os
+
+# 注意：华为昇腾（Ascend）芯片需使用'hccl'后端，NVIDIA GPU使用'nccl'
+deepspeed.init_distributed(dist_backend='hccl')  # 假设使用NVIDIA GPU
+
+# DeepSpeed配置需添加流水线并行参数
+deepspeed_config = {
+    "train_batch_size": 8,
+    "gradient_accumulation_steps": 4,  # 
+    "steps_per_print": 2,            # 新增关键参数
+    "optimizer": {
+        "type": "Adam",
+        "params": {
+            "lr": 0.001
+        }
+    },
+    "pipeline": {
+        "activation_checkpoint_interval": 1  # 启用激活检查点
+    },
+    "fp16": {  # 可选：添加混合精度支持
+        "enabled": True
+    }
+}
+# 修改数据集以包含标签
+class SimpleDataset(torch.utils.data.Dataset):
+    def __init__(self, data_size=1000, input_dim=784, output_dim=10):
+        self.data = torch.randn(data_size, input_dim)
+        self.labels = torch.randn(data_size, output_dim)
+    
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, idx):
+        return (self.data[idx], self.labels[idx])  # 返回输入和标签的元组
+
+# 定义模型层
+class SimpleLayer(torch.nn.Module):
+    def __init__(self, input_size, output_size):
+        super().__init__()
+        self.fc = torch.nn.Linear(input_size, output_size)
+    
+    def forward(self, x):
+        return torch.relu(self.fc(x))
+
+# 构建流水线模型
+layers = [
+    LayerSpec(SimpleLayer, 784, 128),
+    LayerSpec(SimpleLayer, 128, 10)
+]
+
+pipeline_model = PipelineModule(
+    layers=layers,
+    loss_fn=torch.nn.CrossEntropyLoss(),
+    num_stages=2,          # 流水线阶段数需等于GPU数
+    partition_method='uniform',  # 均匀划分层到各个阶段
+)
+dataset = SimpleDataset(data_size=10240)
+
+# 初始化DeepSpeed引擎
+model_engine, optimizer, _, _ = deepspeed.initialize(
+    config=deepspeed_config,
+    model=pipeline_model,
+    model_parameters=pipeline_model.parameters(),
+    training_data=dataset
+)
+
+# 准备数据加载器
+
+for step in range(100): 
+    loss = model_engine.train_batch()
+```
+
+```bash
+deepspeed \
+	--num_gpus 2 \
+	./src/test.py
+```
+
+如果需要自定义`dataloader`
+```python
+# 初始化DeepSpeed引擎
+model_engine, optimizer, _, _ = deepspeed.initialize(
+    config=deepspeed_config,
+    model=pipeline_model,
+    model_parameters=pipeline_model.parameters(),
+)
+
+# 准备数据加载器
+from deepspeed.utils import RepeatingLoader
+datasetloader = torch.utils.data.DataLoader(dataset=dataset,batch_size=deepspeed_config["train_batch_size"])
+dataloader = RepeatingLoader(dataloader)  # 转为无限循环的迭代器
+data_iter = iter(dataloader)
+for step in range(100): 
+    loss = model_engine.train_batch(data_iter=dataiter)
+```
+
+##### Zero
+
+```python
+import torch
+import argparse
+import deepspeed
+import os
+import sys
+
+local_rank = int(os.environ["LOCAL_RANK"])
+device = "npu"
+class SimpleModel(torch.nn.Module):
+    def __init__(self):
+        super(SimpleModel, self).__init__()
+        self.fc1 = torch.nn.Linear(784, 128)
+        self.fc2 = torch.nn.Linear(128, 10)
+
+    def forward(self, x):
+        x = torch.relu(self.fc1(x))
+        return self.fc2(x)
+# Use ZeRO optimization to define the model and DeepSpeed settings
+deepspeed_config = {
+    "train_batch_size": 64,
+    "optimizer": {
+        "type": "Adam",
+        "params": {
+            "lr": 0.001
+        }
+    },
+    "zero_optimization": {
+        "stage": 2 # Toggle gradient partitioning using ZeRO Stage 2
+    }
+}
+
+# Initialize model
+model = SimpleModel()
+parameters = filter(models.parameters(),lambda x:x.required_gred())
+# Initialize DeepSpeed with ZeRO optimization
+model_engine, optimizer, _, _ = deepspeed.initialize(
+    config=deepspeed_config,
+    model=model,
+    parameters
+)
+
+# Forward pass
+inputs = torch.randn(64, 784).to(f"{device}:{local_rank}")
+labels = torch.randn(64,10).to(f"{device}:{local_rank}")
+loss_fn = torch.nn.CrossEntropyLoss()
+outputs = model_engine(inputs)
+loss = loss_fn(outputs,labels)
+# Backward pass and optimization
+model_engine.backward(loss)
+model_engine.step()
+```
+##### sheduler
+
+```python
+import torch.nn as nn
+import torch.optim as optim
+
+# Model definition
+class SimpleModel(nn.Module):
+    def __init__(self):
+        super(SimpleModel, self).__init__()
+        self.fc = nn.Linear(10, 1)
+
+    def forward(self, x):
+        return self.fc(x)
+
+# Initialize model and optimizer
+model = SimpleModel()
+optimizer = optim.Adam(model.parameters(), lr=0.01)
+
+# DeepSpeed configuration for optimizer and scheduler
+ds_config = {
+    "train_batch_size": 8,
+    "optimizer": {
+        "type": "Adam",
+        "params": {
+            "lr": 0.01,
+        }
+    },
+    "scheduler": {
+        "type": "WarmupLR",
+        "params": {
+            "warmup_min_lr": 0.001,
+            "warmup_max_lr": 0.01,
+            "warmup_num_steps": 100
+        }
+    }
+}
+
+# Initialize DeepSpeed with model and optimizer
+model_engine, optimizer, _, lr_scheduler = deepspeed.initialize(model=model, optimizer=optimizer, config_params=ds_config)
+
+# Sample input and forward pass
+inputs = torch.randn(8, 10)
+outputs = model_engine(inputs)
+loss = outputs.mean()
+
+# Backward pass and step
+model_engine.backward(loss)
+model_engine.step()
+lr_scheduler.step()
 ```

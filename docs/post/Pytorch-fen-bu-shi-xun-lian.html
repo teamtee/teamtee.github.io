@@ -239,6 +239,8 @@ torchrun \
 <li><code class="notranslate">MASTER_PORT</code>：主节点的通信端口</li>
 <li><code class="notranslate">TORCH_DISTRIBUTED_DEBUG</code>：可以设置为INFO或DETAIL，以输出更多调试信息</li>
 </ul>
+<h4>启动实例</h4>
+<p><a href="https://www.cnblogs.com/syw-home/p/18073062" rel="nofollow">容器多机多卡训练</a></p>
 <h3>代码适配</h3>
 <p>分布式训练需要对原本的代码做三件事情</p>
 <h4>初始化通信</h4>
@@ -270,9 +272,9 @@ torchrun \
 <span class="pl-s1">world_size</span> <span class="pl-c1">=</span> <span class="pl-s1">args</span>.<span class="pl-c1">world_size</span></pre></div>
 <div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-c">## torchrun</span>
 <span class="pl-k">import</span> <span class="pl-s1">os</span> 
-<span class="pl-s1">rank</span> <span class="pl-c1">=</span> <span class="pl-s1">os</span>.<span class="pl-c1">environ</span>[<span class="pl-s">'RANK'</span>] <span class="pl-s1">可以得到在所有机器所有进程中当前GPU的排序</span>
-<span class="pl-s1">local_rank</span> <span class="pl-c1">=</span> <span class="pl-s1">os</span>.<span class="pl-c1">environ</span>[<span class="pl-s">'LOCAL_RANK'</span>] <span class="pl-s1">可以得到在当前node中当前GPU的排序</span>
-<span class="pl-s1">world_size</span> <span class="pl-c1">=</span> <span class="pl-s1">os</span>.<span class="pl-c1">environ</span>[<span class="pl-s">'WORLD_SIZE'</span>] <span class="pl-s1">可以得到GPU的数量</span>
+<span class="pl-s1">rank</span> <span class="pl-c1">=</span> <span class="pl-en">int</span>(<span class="pl-s1">os</span>.<span class="pl-c1">environ</span>[<span class="pl-s">'RANK'</span>] )
+<span class="pl-s1">local_rank</span> <span class="pl-c1">=</span> <span class="pl-en">int</span>(<span class="pl-s1">os</span>.<span class="pl-c1">environ</span>[<span class="pl-s">'LOCAL_RANK'</span>])
+<span class="pl-s1">world_size</span> <span class="pl-c1">=</span> <span class="pl-en">int</span>(<span class="pl-s1">os</span>.<span class="pl-c1">environ</span>[<span class="pl-s">'WORLD_SIZE'</span>])
 
 <span class="pl-k">def</span> <span class="pl-en">setup</span>(<span class="pl-s1">rank</span>,<span class="pl-s1">local_rank</span>, <span class="pl-s1">world_size</span>):
     <span class="pl-s1">dist</span>.<span class="pl-c1">init_process_group</span>(
@@ -286,11 +288,12 @@ torchrun \
 <span class="pl-s1">sampler</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">utils</span>.<span class="pl-c1">data</span>.<span class="pl-c1">distributed</span>.<span class="pl-c1">DistributedSampler</span>(<span class="pl-s1">dataset</span>)
 <span class="pl-s1">data_loader</span> <span class="pl-c1">=</span> <span class="pl-en">DataLoader</span>(<span class="pl-s1">dataset</span>, <span class="pl-s1">batch_size</span><span class="pl-c1">=</span><span class="pl-s1">batch_size</span>, <span class="pl-s1">sampler</span><span class="pl-c1">=</span><span class="pl-s1">sampler</span>)</pre></div>
 <h4>模型适配</h4>
-<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">import</span> <span class="pl-s1">torch</span>.<span class="pl-s1">nn</span>.<span class="pl-s1">parallel</span>.<span class="pl-v">DistributedDataParallel</span> <span class="pl-k">as</span> <span class="pl-c1">DDP</span>
-<span class="pl-k">import</span> <span class="pl-s1">torch</span>.<span class="pl-s1">distributed</span>.<span class="pl-s1">fsdp</span> <span class="pl-v">FullyShardedDataParallel</span> <span class="pl-k">as</span> <span class="pl-c1">FSDP</span>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">from</span> <span class="pl-s1">torch</span>.<span class="pl-s1">nn</span>.<span class="pl-s1">parallel</span> <span class="pl-k">import</span> <span class="pl-v">DistributedDataParallel</span> <span class="pl-k">as</span> <span class="pl-c1">DDP</span>
+<span class="pl-k">from</span> <span class="pl-s1">torch</span>.<span class="pl-s1">distributed</span>.<span class="pl-s1">fsdp</span> <span class="pl-k">import</span> <span class="pl-v">FullyShardedDataParallel</span> <span class="pl-k">as</span> <span class="pl-c1">FSDP</span>
 
 <span class="pl-c">##  必须init_process_group 之后才可以调用 </span>
-<span class="pl-s1">model</span> <span class="pl-c1">=</span> <span class="pl-en">DDP</span>(<span class="pl-s1">model</span>, <span class="pl-s1">device_ids</span><span class="pl-c1">=</span>[<span class="pl-s1">local_rank</span>], <span class="pl-s1">output_device</span><span class="pl-c1">=</span><span class="pl-s1">local_rank</span>)
+<span class="pl-s1">model</span>.<span class="pl-c1">to</span>(<span class="pl-s1">device</span>)
+<span class="pl-s1">model</span> <span class="pl-c1">=</span> <span class="pl-en">DDP</span>(<span class="pl-s1">model</span>, <span class="pl-s1">device_ids</span><span class="pl-c1">=</span>[<span class="pl-s1">local_rank</span>])
 <span class="pl-s1">model</span> <span class="pl-c1">=</span> <span class="pl-en">FSDP</span>(<span class="pl-s1">model</span>, <span class="pl-s1">device_id</span><span class="pl-c1">=</span><span class="pl-s1">local_rank</span>)
 
 <span class="pl-c">## 要在构造DDP model之后，才能用model初始化optimizer。</span>
@@ -324,7 +327,7 @@ torchrun \
 </ul>
 </li>
 </ul>
-<h5>FSDP 参数</h5>
+<h5>FSDP 参数 (注意，我在使用过程中一直没有调通)</h5>
 <p>我们在使用 FSDP 时，需要通过配置 auto_wrap_policy 参数来选择模型分片策略，不然显存优化只能达到 ZeRO-stage1 的水准</p>
 <ul>
 <li><code class="notranslate">auto_wrap_policy</code>
@@ -383,7 +386,7 @@ torchrun \
     <span class="pl-s1">model</span>,
     <span class="pl-s1">auto_wrap_policy</span><span class="pl-c1">=</span><span class="pl-s1">auto_wrap_policy</span>,
     <span class="pl-s1">sharding_strategy</span><span class="pl-c1">=</span><span class="pl-s1">sharding_strategy</span>,
-    <span class="pl-s1">device_id</span><span class="pl-c1">=</span><span class="pl-s1">torch</span>.<span class="pl-c1">cuda</span>.<span class="pl-c1">current_device</span>()
+    <span class="pl-s1">device_id</span><span class="pl-c1">=</span><span class="pl-s1">torch</span>.<span class="pl-c1">cuda</span>.<span class="pl-c1">current_device</span>(),
 )</pre></div>
 <ul>
 <li><code class="notranslate">limit_all_gathers</code>:
@@ -471,7 +474,306 @@ torchrun \
     <span class="pl-c"># DDP：设置sampler的epoch，</span>
     <span class="pl-c"># DistributedSampler需要这个来指定shuffle方式，</span>
     <span class="pl-c"># 通过维持各个进程之间的相同随机数种子使不同进程能获得同样的shuffle效果。</span>
-    <span class="pl-s1">data_loader</span>.<span class="pl-c1">sampler</span>.<span class="pl-c1">set_epoch</span>(<span class="pl-s1">epoch</span>)</pre></div></div>
+    <span class="pl-s1">data_loader</span>.<span class="pl-c1">sampler</span>.<span class="pl-c1">set_epoch</span>(<span class="pl-s1">epoch</span>)</pre></div>
+<h2>Deepspeed框架启动</h2>
+<p><a href="https://github.com/bobo0810/LearnDeepSpeed">参考教程</a><br>
+<a href="https://github.com/deepspeedai/DeepSpeedExamples/blob/master/training/pipeline_parallelism/train.py">参考示例</a><br>
+<a href="https://www.tutorialspoint.com/deepspeed/deepspeed-optimizer.htm" rel="nofollow">绝对入门的好教程</a></p>
+<p>Deepspeed会同时设置环境变量和传递参数</p>
+<pre class="notranslate"><code class="notranslate">deepspeed --num_nodes 2 --num_gpus 8 train.py
+</code></pre>
+<h4>配置</h4>
+<p><a href="https://zhuanlan.zhihu.com/p/654925843" rel="nofollow">参考</a></p>
+<div class="highlight highlight-source-python"><pre class="notranslate">{
+    <span class="pl-s">"train_batch_size"</span>: <span class="pl-c1">32</span>,
+    <span class="pl-s">"gradient_accumulation_steps"</span>: <span class="pl-c1">2</span>,
+    <span class="pl-s">"fp16"</span>: {
+        <span class="pl-s">"enabled"</span>: <span class="pl-s1">true</span>
+    },
+    <span class="pl-s">"optimizer"</span>: {
+        <span class="pl-s">"type"</span>: <span class="pl-s">"AdamW"</span>,
+        <span class="pl-s">"params"</span>: {
+            <span class="pl-s">"lr"</span>: <span class="pl-c1">0.001</span>,
+            <span class="pl-s">"betas"</span>: [<span class="pl-c1">0.9</span>, <span class="pl-c1">0.999</span>],
+            <span class="pl-s">"eps"</span>: <span class="pl-c1">1e-08</span>,
+            <span class="pl-s">"weight_decay"</span>: <span class="pl-c1">0.01</span>
+        }
+    },
+    <span class="pl-s">"scheduler"</span>: {
+        <span class="pl-s">"type"</span>: <span class="pl-s">"WarmupLR"</span>,
+        <span class="pl-s">"params"</span>: {
+            <span class="pl-s">"warmup_min_lr"</span>: <span class="pl-c1">0.0</span>,
+            <span class="pl-s">"warmup_max_lr"</span>: <span class="pl-c1">0.001</span>,
+            <span class="pl-s">"warmup_num_steps"</span>: <span class="pl-c1">100</span>
+        }
+    },
+    <span class="pl-s">"zero_optimization"</span>: {
+        <span class="pl-s">"stage"</span>: <span class="pl-c1">2</span>,
+        <span class="pl-s">"contiguous_gradients"</span>: <span class="pl-s1">true</span>,
+        <span class="pl-s">"reduce_scatter"</span>: <span class="pl-s1">true</span>,
+        <span class="pl-s">"allgather_partitions"</span>: <span class="pl-s1">true</span>
+    }
+}</pre></div>
+<h5>混合精度</h5>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-s">"fp16"</span>: {
+  <span class="pl-s">"enabled"</span>: <span class="pl-s1">true</span>,
+  <span class="pl-s">"loss_scale"</span>: <span class="pl-c1">0</span>,
+  <span class="pl-s">"loss_scale_window"</span>: <span class="pl-c1">1000</span>,
+  <span class="pl-s">"hysteresis"</span>: <span class="pl-c1">2</span>,
+  <span class="pl-s">"min_loss_scale"</span>: <span class="pl-c1">1</span>
+}
+<span class="pl-s">"bf16"</span>: { <span class="pl-s">"enabled"</span>: <span class="pl-s1">true</span> }</pre></div>
+<h4>保存和加载</h4>
+<div class="highlight highlight-source-python"><pre class="notranslate"> <span class="pl-c"># 保存PP模型</span>
+    <span class="pl-s1">save_dir</span> <span class="pl-c1">=</span> <span class="pl-s">"./checkpoint"</span>
+    <span class="pl-s1">engine</span>.<span class="pl-c1">save_checkpoint</span>(<span class="pl-s1">save_dir</span><span class="pl-c1">=</span><span class="pl-s1">save_dir</span>)
+    <span class="pl-c"># ---------------------- 模型加载 ----------------------</span>
+    <span class="pl-en">print</span>(<span class="pl-s">"加载模型"</span>)
+    <span class="pl-s1">dist</span>.<span class="pl-c1">barrier</span>()
+    <span class="pl-s1">engine</span>.<span class="pl-c1">load_checkpoint</span>(
+        <span class="pl-s1">save_dir</span>, <span class="pl-s1">tag</span><span class="pl-c1">=</span><span class="pl-s1">tag</span>, <span class="pl-s1">load_optimizer_states</span><span class="pl-c1">=</span><span class="pl-c1">False</span>, <span class="pl-s1">load_lr_scheduler_states</span><span class="pl-c1">=</span><span class="pl-c1">False</span>
+    )
+    <span class="pl-s1">dist</span>.<span class="pl-c1">barrier</span>()</pre></div>
+<h4>示例</h4>
+<h5>数据并行</h5>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">import</span> <span class="pl-s1">torch</span>
+<span class="pl-k">import</span> <span class="pl-s1">deepspeed</span>
+
+<span class="pl-c"># Define a simple neural network model</span>
+<span class="pl-k">class</span> <span class="pl-v">SimpleModel</span>(<span class="pl-s1">torch</span>.<span class="pl-c1">nn</span>.<span class="pl-c1">Module</span>):
+    <span class="pl-k">def</span> <span class="pl-en">__init__</span>(<span class="pl-s1">self</span>):
+        <span class="pl-en">super</span>(<span class="pl-v">SimpleModel</span>, <span class="pl-s1">self</span>).<span class="pl-c1">__init__</span>()
+        <span class="pl-s1">self</span>.<span class="pl-c1">fc1</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">nn</span>.<span class="pl-c1">Linear</span>(<span class="pl-c1">784</span>, <span class="pl-c1">128</span>)
+        <span class="pl-s1">self</span>.<span class="pl-c1">fc2</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">nn</span>.<span class="pl-c1">Linear</span>(<span class="pl-c1">128</span>, <span class="pl-c1">10</span>)
+
+    <span class="pl-k">def</span> <span class="pl-en">forward</span>(<span class="pl-s1">self</span>, <span class="pl-s1">x</span>):
+        <span class="pl-s1">x</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">relu</span>(<span class="pl-s1">self</span>.<span class="pl-c1">fc1</span>(<span class="pl-s1">x</span>))
+        <span class="pl-k">return</span> <span class="pl-s1">self</span>.<span class="pl-c1">fc2</span>(<span class="pl-s1">x</span>)
+
+<span class="pl-c"># Initialize DeepSpeed configuration</span>
+<span class="pl-s1">deepspeed_config</span> <span class="pl-c1">=</span> {
+    <span class="pl-s">"train_batch_size"</span>: <span class="pl-c1">64</span>,
+    <span class="pl-s">"optimizer"</span>: {
+        <span class="pl-s">"type"</span>: <span class="pl-s">"Adam"</span>,
+        <span class="pl-s">"params"</span>: {
+            <span class="pl-s">"lr"</span>: <span class="pl-c1">0.001</span>
+        }
+    }
+}
+
+<span class="pl-c"># Initialize model</span>
+<span class="pl-s1">model</span> <span class="pl-c1">=</span> <span class="pl-en">SimpleModel</span>()
+
+<span class="pl-c"># Initialize DeepSpeed for distributed data parallelity</span>
+<span class="pl-s1">model_engine</span>, <span class="pl-s1">optimizer</span>, <span class="pl-s1">_</span>, <span class="pl-s1">_</span> <span class="pl-c1">=</span> <span class="pl-s1">deepspeed</span>.<span class="pl-c1">initialize</span>(
+    <span class="pl-s1">config</span><span class="pl-c1">=</span><span class="pl-s1">deepspeed_config</span>,
+    <span class="pl-s1">model</span><span class="pl-c1">=</span><span class="pl-s1">model</span>
+)
+
+<span class="pl-c"># Dummy data</span>
+<span class="pl-s1">inputs</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">randn</span>(<span class="pl-c1">64</span>, <span class="pl-c1">784</span>)
+<span class="pl-s1">labels</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">randint</span>(<span class="pl-c1">0</span>, <span class="pl-c1">10</span>, (<span class="pl-c1">64</span>,))
+
+<span class="pl-c"># Forward pass</span>
+<span class="pl-s1">outputs</span> <span class="pl-c1">=</span> <span class="pl-en">model_engine</span>(<span class="pl-s1">inputs</span>)
+<span class="pl-s1">loss</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">nn</span>.<span class="pl-c1">functional</span>.<span class="pl-c1">cross_entropy</span>(<span class="pl-s1">outputs</span>, <span class="pl-s1">labels</span>)
+
+<span class="pl-c"># Backward pass and optimization</span>
+<span class="pl-s1">model_engine</span>.<span class="pl-c1">backward</span>(<span class="pl-s1">loss</span>)
+<span class="pl-s1">model_engine</span>.<span class="pl-c1">step</span>()</pre></div>
+<h5>Pipeline</h5>
+<p><a href="https://github.com/bobo0810/LearnDeepSpeed/blob/main/training/pipeline_parallelism/train.py">参考</a><br>
+下面是一个最小的流水线示例，</p>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">import</span> <span class="pl-s1">torch</span>
+<span class="pl-k">import</span> <span class="pl-s1">deepspeed</span>
+<span class="pl-k">from</span> <span class="pl-s1">deepspeed</span>.<span class="pl-s1">pipe</span> <span class="pl-k">import</span> <span class="pl-v">PipelineModule</span>, <span class="pl-v">LayerSpec</span>
+<span class="pl-k">import</span> <span class="pl-s1">os</span>
+
+<span class="pl-c"># 注意：华为昇腾（Ascend）芯片需使用'hccl'后端，NVIDIA GPU使用'nccl'</span>
+<span class="pl-s1">deepspeed</span>.<span class="pl-c1">init_distributed</span>(<span class="pl-s1">dist_backend</span><span class="pl-c1">=</span><span class="pl-s">'hccl'</span>)  <span class="pl-c"># 假设使用NVIDIA GPU</span>
+
+<span class="pl-c"># DeepSpeed配置需添加流水线并行参数</span>
+<span class="pl-s1">deepspeed_config</span> <span class="pl-c1">=</span> {
+    <span class="pl-s">"train_batch_size"</span>: <span class="pl-c1">8</span>,
+    <span class="pl-s">"gradient_accumulation_steps"</span>: <span class="pl-c1">4</span>,  <span class="pl-c"># </span>
+    <span class="pl-s">"steps_per_print"</span>: <span class="pl-c1">2</span>,            <span class="pl-c"># 新增关键参数</span>
+    <span class="pl-s">"optimizer"</span>: {
+        <span class="pl-s">"type"</span>: <span class="pl-s">"Adam"</span>,
+        <span class="pl-s">"params"</span>: {
+            <span class="pl-s">"lr"</span>: <span class="pl-c1">0.001</span>
+        }
+    },
+    <span class="pl-s">"pipeline"</span>: {
+        <span class="pl-s">"activation_checkpoint_interval"</span>: <span class="pl-c1">1</span>  <span class="pl-c"># 启用激活检查点</span>
+    },
+    <span class="pl-s">"fp16"</span>: {  <span class="pl-c"># 可选：添加混合精度支持</span>
+        <span class="pl-s">"enabled"</span>: <span class="pl-c1">True</span>
+    }
+}
+<span class="pl-c"># 修改数据集以包含标签</span>
+<span class="pl-k">class</span> <span class="pl-v">SimpleDataset</span>(<span class="pl-s1">torch</span>.<span class="pl-c1">utils</span>.<span class="pl-c1">data</span>.<span class="pl-c1">Dataset</span>):
+    <span class="pl-k">def</span> <span class="pl-en">__init__</span>(<span class="pl-s1">self</span>, <span class="pl-s1">data_size</span><span class="pl-c1">=</span><span class="pl-c1">1000</span>, <span class="pl-s1">input_dim</span><span class="pl-c1">=</span><span class="pl-c1">784</span>, <span class="pl-s1">output_dim</span><span class="pl-c1">=</span><span class="pl-c1">10</span>):
+        <span class="pl-s1">self</span>.<span class="pl-c1">data</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">randn</span>(<span class="pl-s1">data_size</span>, <span class="pl-s1">input_dim</span>)
+        <span class="pl-s1">self</span>.<span class="pl-c1">labels</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">randn</span>(<span class="pl-s1">data_size</span>, <span class="pl-s1">output_dim</span>)
+    
+    <span class="pl-k">def</span> <span class="pl-en">__len__</span>(<span class="pl-s1">self</span>):
+        <span class="pl-k">return</span> <span class="pl-en">len</span>(<span class="pl-s1">self</span>.<span class="pl-c1">data</span>)
+    
+    <span class="pl-k">def</span> <span class="pl-en">__getitem__</span>(<span class="pl-s1">self</span>, <span class="pl-s1">idx</span>):
+        <span class="pl-k">return</span> (<span class="pl-s1">self</span>.<span class="pl-c1">data</span>[<span class="pl-s1">idx</span>], <span class="pl-s1">self</span>.<span class="pl-c1">labels</span>[<span class="pl-s1">idx</span>])  <span class="pl-c"># 返回输入和标签的元组</span>
+
+<span class="pl-c"># 定义模型层</span>
+<span class="pl-k">class</span> <span class="pl-v">SimpleLayer</span>(<span class="pl-s1">torch</span>.<span class="pl-c1">nn</span>.<span class="pl-c1">Module</span>):
+    <span class="pl-k">def</span> <span class="pl-en">__init__</span>(<span class="pl-s1">self</span>, <span class="pl-s1">input_size</span>, <span class="pl-s1">output_size</span>):
+        <span class="pl-en">super</span>().<span class="pl-c1">__init__</span>()
+        <span class="pl-s1">self</span>.<span class="pl-c1">fc</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">nn</span>.<span class="pl-c1">Linear</span>(<span class="pl-s1">input_size</span>, <span class="pl-s1">output_size</span>)
+    
+    <span class="pl-k">def</span> <span class="pl-en">forward</span>(<span class="pl-s1">self</span>, <span class="pl-s1">x</span>):
+        <span class="pl-k">return</span> <span class="pl-s1">torch</span>.<span class="pl-c1">relu</span>(<span class="pl-s1">self</span>.<span class="pl-c1">fc</span>(<span class="pl-s1">x</span>))
+
+<span class="pl-c"># 构建流水线模型</span>
+<span class="pl-s1">layers</span> <span class="pl-c1">=</span> [
+    <span class="pl-en">LayerSpec</span>(<span class="pl-v">SimpleLayer</span>, <span class="pl-c1">784</span>, <span class="pl-c1">128</span>),
+    <span class="pl-en">LayerSpec</span>(<span class="pl-v">SimpleLayer</span>, <span class="pl-c1">128</span>, <span class="pl-c1">10</span>)
+]
+
+<span class="pl-s1">pipeline_model</span> <span class="pl-c1">=</span> <span class="pl-en">PipelineModule</span>(
+    <span class="pl-s1">layers</span><span class="pl-c1">=</span><span class="pl-s1">layers</span>,
+    <span class="pl-s1">loss_fn</span><span class="pl-c1">=</span><span class="pl-s1">torch</span>.<span class="pl-c1">nn</span>.<span class="pl-c1">CrossEntropyLoss</span>(),
+    <span class="pl-s1">num_stages</span><span class="pl-c1">=</span><span class="pl-c1">2</span>,          <span class="pl-c"># 流水线阶段数需等于GPU数</span>
+    <span class="pl-s1">partition_method</span><span class="pl-c1">=</span><span class="pl-s">'uniform'</span>,  <span class="pl-c"># 均匀划分层到各个阶段</span>
+)
+<span class="pl-s1">dataset</span> <span class="pl-c1">=</span> <span class="pl-en">SimpleDataset</span>(<span class="pl-s1">data_size</span><span class="pl-c1">=</span><span class="pl-c1">10240</span>)
+
+<span class="pl-c"># 初始化DeepSpeed引擎</span>
+<span class="pl-s1">model_engine</span>, <span class="pl-s1">optimizer</span>, <span class="pl-s1">_</span>, <span class="pl-s1">_</span> <span class="pl-c1">=</span> <span class="pl-s1">deepspeed</span>.<span class="pl-c1">initialize</span>(
+    <span class="pl-s1">config</span><span class="pl-c1">=</span><span class="pl-s1">deepspeed_config</span>,
+    <span class="pl-s1">model</span><span class="pl-c1">=</span><span class="pl-s1">pipeline_model</span>,
+    <span class="pl-s1">model_parameters</span><span class="pl-c1">=</span><span class="pl-s1">pipeline_model</span>.<span class="pl-c1">parameters</span>(),
+    <span class="pl-s1">training_data</span><span class="pl-c1">=</span><span class="pl-s1">dataset</span>
+)
+
+<span class="pl-c"># 准备数据加载器</span>
+
+<span class="pl-k">for</span> <span class="pl-s1">step</span> <span class="pl-c1">in</span> <span class="pl-en">range</span>(<span class="pl-c1">100</span>): 
+    <span class="pl-s1">loss</span> <span class="pl-c1">=</span> <span class="pl-s1">model_engine</span>.<span class="pl-c1">train_batch</span>()</pre></div>
+<div class="highlight highlight-source-shell"><pre class="notranslate">deepspeed \
+	--num_gpus 2 \
+	./src/test.py</pre></div>
+<p>如果需要自定义<code class="notranslate">dataloader</code></p>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-c"># 初始化DeepSpeed引擎</span>
+<span class="pl-s1">model_engine</span>, <span class="pl-s1">optimizer</span>, <span class="pl-s1">_</span>, <span class="pl-s1">_</span> <span class="pl-c1">=</span> <span class="pl-s1">deepspeed</span>.<span class="pl-c1">initialize</span>(
+    <span class="pl-s1">config</span><span class="pl-c1">=</span><span class="pl-s1">deepspeed_config</span>,
+    <span class="pl-s1">model</span><span class="pl-c1">=</span><span class="pl-s1">pipeline_model</span>,
+    <span class="pl-s1">model_parameters</span><span class="pl-c1">=</span><span class="pl-s1">pipeline_model</span>.<span class="pl-c1">parameters</span>(),
+)
+
+<span class="pl-c"># 准备数据加载器</span>
+<span class="pl-k">from</span> <span class="pl-s1">deepspeed</span>.<span class="pl-s1">utils</span> <span class="pl-k">import</span> <span class="pl-v">RepeatingLoader</span>
+<span class="pl-s1">datasetloader</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">utils</span>.<span class="pl-c1">data</span>.<span class="pl-c1">DataLoader</span>(<span class="pl-s1">dataset</span><span class="pl-c1">=</span><span class="pl-s1">dataset</span>,<span class="pl-s1">batch_size</span><span class="pl-c1">=</span><span class="pl-s1">deepspeed_config</span>[<span class="pl-s">"train_batch_size"</span>])
+<span class="pl-s1">dataloader</span> <span class="pl-c1">=</span> <span class="pl-en">RepeatingLoader</span>(<span class="pl-s1">dataloader</span>)  <span class="pl-c"># 转为无限循环的迭代器</span>
+<span class="pl-s1">data_iter</span> <span class="pl-c1">=</span> <span class="pl-en">iter</span>(<span class="pl-s1">dataloader</span>)
+<span class="pl-k">for</span> <span class="pl-s1">step</span> <span class="pl-c1">in</span> <span class="pl-en">range</span>(<span class="pl-c1">100</span>): 
+    <span class="pl-s1">loss</span> <span class="pl-c1">=</span> <span class="pl-s1">model_engine</span>.<span class="pl-c1">train_batch</span>(<span class="pl-s1">data_iter</span><span class="pl-c1">=</span><span class="pl-s1">dataiter</span>)</pre></div>
+<h5>Zero</h5>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">import</span> <span class="pl-s1">torch</span>
+<span class="pl-k">import</span> <span class="pl-s1">argparse</span>
+<span class="pl-k">import</span> <span class="pl-s1">deepspeed</span>
+<span class="pl-k">import</span> <span class="pl-s1">os</span>
+<span class="pl-k">import</span> <span class="pl-s1">sys</span>
+
+<span class="pl-s1">local_rank</span> <span class="pl-c1">=</span> <span class="pl-en">int</span>(<span class="pl-s1">os</span>.<span class="pl-c1">environ</span>[<span class="pl-s">"LOCAL_RANK"</span>])
+<span class="pl-s1">device</span> <span class="pl-c1">=</span> <span class="pl-s">"npu"</span>
+<span class="pl-k">class</span> <span class="pl-v">SimpleModel</span>(<span class="pl-s1">torch</span>.<span class="pl-c1">nn</span>.<span class="pl-c1">Module</span>):
+    <span class="pl-k">def</span> <span class="pl-en">__init__</span>(<span class="pl-s1">self</span>):
+        <span class="pl-en">super</span>(<span class="pl-v">SimpleModel</span>, <span class="pl-s1">self</span>).<span class="pl-c1">__init__</span>()
+        <span class="pl-s1">self</span>.<span class="pl-c1">fc1</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">nn</span>.<span class="pl-c1">Linear</span>(<span class="pl-c1">784</span>, <span class="pl-c1">128</span>)
+        <span class="pl-s1">self</span>.<span class="pl-c1">fc2</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">nn</span>.<span class="pl-c1">Linear</span>(<span class="pl-c1">128</span>, <span class="pl-c1">10</span>)
+
+    <span class="pl-k">def</span> <span class="pl-en">forward</span>(<span class="pl-s1">self</span>, <span class="pl-s1">x</span>):
+        <span class="pl-s1">x</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">relu</span>(<span class="pl-s1">self</span>.<span class="pl-c1">fc1</span>(<span class="pl-s1">x</span>))
+        <span class="pl-k">return</span> <span class="pl-s1">self</span>.<span class="pl-c1">fc2</span>(<span class="pl-s1">x</span>)
+<span class="pl-c"># Use ZeRO optimization to define the model and DeepSpeed settings</span>
+<span class="pl-s1">deepspeed_config</span> <span class="pl-c1">=</span> {
+    <span class="pl-s">"train_batch_size"</span>: <span class="pl-c1">64</span>,
+    <span class="pl-s">"optimizer"</span>: {
+        <span class="pl-s">"type"</span>: <span class="pl-s">"Adam"</span>,
+        <span class="pl-s">"params"</span>: {
+            <span class="pl-s">"lr"</span>: <span class="pl-c1">0.001</span>
+        }
+    },
+    <span class="pl-s">"zero_optimization"</span>: {
+        <span class="pl-s">"stage"</span>: <span class="pl-c1">2</span> <span class="pl-c"># Toggle gradient partitioning using ZeRO Stage 2</span>
+    }
+}
+
+<span class="pl-c"># Initialize model</span>
+<span class="pl-s1">model</span> <span class="pl-c1">=</span> <span class="pl-en">SimpleModel</span>()
+<span class="pl-s1">parameters</span> <span class="pl-c1">=</span> <span class="pl-en">filter</span>(<span class="pl-s1">models</span>.<span class="pl-c1">parameters</span>(),<span class="pl-k">lambda</span> <span class="pl-s1">x</span>:<span class="pl-s1">x</span>.<span class="pl-c1">required_gred</span>())
+<span class="pl-c"># Initialize DeepSpeed with ZeRO optimization</span>
+<span class="pl-s1">model_engine</span>, <span class="pl-s1">optimizer</span>, <span class="pl-s1">_</span>, <span class="pl-s1">_</span> <span class="pl-c1">=</span> <span class="pl-s1">deepspeed</span>.<span class="pl-c1">initialize</span>(
+    <span class="pl-s1">config</span><span class="pl-c1">=</span><span class="pl-s1">deepspeed_config</span>,
+    <span class="pl-s1">model</span><span class="pl-c1">=</span><span class="pl-s1">model</span>,
+    <span class="pl-s1">parameters</span>
+)
+
+<span class="pl-c"># Forward pass</span>
+<span class="pl-s1">inputs</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">randn</span>(<span class="pl-c1">64</span>, <span class="pl-c1">784</span>).<span class="pl-c1">to</span>(<span class="pl-s">f"<span class="pl-s1"><span class="pl-kos">{</span><span class="pl-s1">device</span><span class="pl-kos">}</span></span>:<span class="pl-s1"><span class="pl-kos">{</span><span class="pl-s1">local_rank</span><span class="pl-kos">}</span></span>"</span>)
+<span class="pl-s1">labels</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">randn</span>(<span class="pl-c1">64</span>,<span class="pl-c1">10</span>).<span class="pl-c1">to</span>(<span class="pl-s">f"<span class="pl-s1"><span class="pl-kos">{</span><span class="pl-s1">device</span><span class="pl-kos">}</span></span>:<span class="pl-s1"><span class="pl-kos">{</span><span class="pl-s1">local_rank</span><span class="pl-kos">}</span></span>"</span>)
+<span class="pl-s1">loss_fn</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">nn</span>.<span class="pl-c1">CrossEntropyLoss</span>()
+<span class="pl-s1">outputs</span> <span class="pl-c1">=</span> <span class="pl-en">model_engine</span>(<span class="pl-s1">inputs</span>)
+<span class="pl-s1">loss</span> <span class="pl-c1">=</span> <span class="pl-en">loss_fn</span>(<span class="pl-s1">outputs</span>,<span class="pl-s1">labels</span>)
+<span class="pl-c"># Backward pass and optimization</span>
+<span class="pl-s1">model_engine</span>.<span class="pl-c1">backward</span>(<span class="pl-s1">loss</span>)
+<span class="pl-s1">model_engine</span>.<span class="pl-c1">step</span>()</pre></div>
+<h5>sheduler</h5>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">import</span> <span class="pl-s1">torch</span>.<span class="pl-s1">nn</span> <span class="pl-k">as</span> <span class="pl-s1">nn</span>
+<span class="pl-k">import</span> <span class="pl-s1">torch</span>.<span class="pl-s1">optim</span> <span class="pl-k">as</span> <span class="pl-s1">optim</span>
+
+<span class="pl-c"># Model definition</span>
+<span class="pl-k">class</span> <span class="pl-v">SimpleModel</span>(<span class="pl-s1">nn</span>.<span class="pl-c1">Module</span>):
+    <span class="pl-k">def</span> <span class="pl-en">__init__</span>(<span class="pl-s1">self</span>):
+        <span class="pl-en">super</span>(<span class="pl-v">SimpleModel</span>, <span class="pl-s1">self</span>).<span class="pl-c1">__init__</span>()
+        <span class="pl-s1">self</span>.<span class="pl-c1">fc</span> <span class="pl-c1">=</span> <span class="pl-s1">nn</span>.<span class="pl-c1">Linear</span>(<span class="pl-c1">10</span>, <span class="pl-c1">1</span>)
+
+    <span class="pl-k">def</span> <span class="pl-en">forward</span>(<span class="pl-s1">self</span>, <span class="pl-s1">x</span>):
+        <span class="pl-k">return</span> <span class="pl-s1">self</span>.<span class="pl-c1">fc</span>(<span class="pl-s1">x</span>)
+
+<span class="pl-c"># Initialize model and optimizer</span>
+<span class="pl-s1">model</span> <span class="pl-c1">=</span> <span class="pl-en">SimpleModel</span>()
+<span class="pl-s1">optimizer</span> <span class="pl-c1">=</span> <span class="pl-s1">optim</span>.<span class="pl-c1">Adam</span>(<span class="pl-s1">model</span>.<span class="pl-c1">parameters</span>(), <span class="pl-s1">lr</span><span class="pl-c1">=</span><span class="pl-c1">0.01</span>)
+
+<span class="pl-c"># DeepSpeed configuration for optimizer and scheduler</span>
+<span class="pl-s1">ds_config</span> <span class="pl-c1">=</span> {
+    <span class="pl-s">"train_batch_size"</span>: <span class="pl-c1">8</span>,
+    <span class="pl-s">"optimizer"</span>: {
+        <span class="pl-s">"type"</span>: <span class="pl-s">"Adam"</span>,
+        <span class="pl-s">"params"</span>: {
+            <span class="pl-s">"lr"</span>: <span class="pl-c1">0.01</span>,
+        }
+    },
+    <span class="pl-s">"scheduler"</span>: {
+        <span class="pl-s">"type"</span>: <span class="pl-s">"WarmupLR"</span>,
+        <span class="pl-s">"params"</span>: {
+            <span class="pl-s">"warmup_min_lr"</span>: <span class="pl-c1">0.001</span>,
+            <span class="pl-s">"warmup_max_lr"</span>: <span class="pl-c1">0.01</span>,
+            <span class="pl-s">"warmup_num_steps"</span>: <span class="pl-c1">100</span>
+        }
+    }
+}
+
+<span class="pl-c"># Initialize DeepSpeed with model and optimizer</span>
+<span class="pl-s1">model_engine</span>, <span class="pl-s1">optimizer</span>, <span class="pl-s1">_</span>, <span class="pl-s1">lr_scheduler</span> <span class="pl-c1">=</span> <span class="pl-s1">deepspeed</span>.<span class="pl-c1">initialize</span>(<span class="pl-s1">model</span><span class="pl-c1">=</span><span class="pl-s1">model</span>, <span class="pl-s1">optimizer</span><span class="pl-c1">=</span><span class="pl-s1">optimizer</span>, <span class="pl-s1">config_params</span><span class="pl-c1">=</span><span class="pl-s1">ds_config</span>)
+
+<span class="pl-c"># Sample input and forward pass</span>
+<span class="pl-s1">inputs</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">randn</span>(<span class="pl-c1">8</span>, <span class="pl-c1">10</span>)
+<span class="pl-s1">outputs</span> <span class="pl-c1">=</span> <span class="pl-en">model_engine</span>(<span class="pl-s1">inputs</span>)
+<span class="pl-s1">loss</span> <span class="pl-c1">=</span> <span class="pl-s1">outputs</span>.<span class="pl-c1">mean</span>()
+
+<span class="pl-c"># Backward pass and step</span>
+<span class="pl-s1">model_engine</span>.<span class="pl-c1">backward</span>(<span class="pl-s1">loss</span>)
+<span class="pl-s1">model_engine</span>.<span class="pl-c1">step</span>()
+<span class="pl-s1">lr_scheduler</span>.<span class="pl-c1">step</span>()</pre></div></div>
 <div style="font-size:small;margin-top:8px;float:right;">转载请注明出处</div>
 
 </div>

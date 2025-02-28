@@ -105,7 +105,6 @@ python -m torch.distributed.launch \
     --master_addr="192.168.1.1" \
     --master_port=1234 \
     train_script.py
-
 # 从节点
 python -m torch.distributed.launch \
     --nproc_per_node=4 \
@@ -403,10 +402,84 @@ for epoch in iterator:
 [参考教程](https://github.com/bobo0810/LearnDeepSpeed)
 [参考示例](https://github.com/deepspeedai/DeepSpeedExamples/blob/master/training/pipeline_parallelism/train.py)
 [绝对入门的好教程](https://www.tutorialspoint.com/deepspeed/deepspeed-optimizer.htm)
+[官方简短的教程](https://www.deepspeed.ai/getting-started/#resource-configuration-multi-node)
+
 #### 启动
+[详细讲解](https://blog.csdn.net/weixin_42486623/article/details/132793261)
+##### deepspeed命令启动
+###### 单机多卡
 Deepspeed会同时设置环境变量和传递参数
 ```
-deepspeed --num_nodes 2 --num_gpus 8 train.py
+deepspeed  --num_gpus 8 train.py --deepspeed  # 不指定--num_gpus 8则会使用所有的显卡
+```
+指定GPU
+```
+deepspeed --include localhost:1
+```
+###### 单/多机多卡 ssh连接
+[参考](https://blog.csdn.net/weixin_42486623/article/details/132793261)
+首先在每一台机器上安装必要的库
+```
+apt install pdsh sshd
+```
+建立一个hostfile,内容为机器ip+显卡数,如果只有一条，等效于单机多卡
+```
+x.x.x.x slots=8
+x.x.x.x slots=8
+```
+确保每台机器都能够通过ssh免密连接
+```
+ssh-keygen 
+echo id_rsa.pub > known_hosts
+```
+在每台机器上启动sshd服务，然后在主机器上运行
+```
+# 主机器
+deepspeed \
+	--hostfile $HOST_FILE \
+	--ssh_port $SSH_PORT \
+	train.py
+```
+###### 单/多机多卡-无ssh(适配k8s)
+在每台机器上都即启动该命令，类是torchrun启动
+```
+deepspeed --hostfile=myhostfile --no_ssh --node_rank=<n> \
+    --master_addr=<addr> --master_port=<port> \
+    <client_entry.py> <client args> 
+```
+##### 指定配置文件
+
+deepspeed支持3种方式指定配置文件
+- ~~命令行指定：(似乎已经被丢弃)~~
+```
+deepspeed   train.py --deepspeed --deepspeed_config ds_config.json
+```
+- 模型初始化时指定路径：
+```python
+model_engine, optimizer, _, scheduler = deepspeed.initialize(
+    config="path",
+```
+- 模型初始化时传递字典：
+```python
+deepspeed_config = {
+    "train_batch_size": 8,
+    "gradient_accumulation_steps": 4,  # 
+    "steps_per_print": 2,            # 新增关键参数
+    "optimizer": {
+        "type": "Adam",
+        "params": {
+            "lr": 0.001
+        }
+    },
+    "pipeline": {
+        "activation_checkpoint_interval": 1  # 启用激活检查点
+    },
+    "fp16": {  # 可选：添加混合精度支持
+        "enabled": True
+    }
+}
+model_engine, optimizer, _, scheduler = deepspeed.initialize(
+    config=deepspeed_config,
 ```
 #### 代码适配
 ##### 初始化通信
@@ -427,9 +500,18 @@ dist_backend='hccl', # 使用NCCL后端（GPU场景）
     model_parameters=parameters
 )
 ```
+##### 数据集适配
+如果在上一步适配模型处没有指定training_data
+``` python
+## 数据集合
+## 构造
+sampler = torch.utils.data.distributed.DistributedSampler(dataset)
+data_loader = DataLoader(dataset, batch_size=batch_size, sampler=sampler)
+```
+
 ##### 模型训练
 ```
-model_engine.train()
+loss = model_engine.train(**batch) /如果初始化
 model_engine.backward(loss)
 model_engine.step()
 ```
@@ -441,7 +523,7 @@ model_engine.save_checkpoint(args.save_dir, ckpt_id=step, client_sd=client_sd)
 # Load checkpoint
 _, client_sd = model_engine.load_checkpoint(args.load_dir, args.ckpt_id)
 ```
-#### 配置
+#### 模型配置
 
 [参考](https://zhuanlan.zhihu.com/p/654925843)
 ```python
@@ -487,18 +569,86 @@ _, client_sd = model_engine.load_checkpoint(args.load_dir, args.ckpt_id)
 }
 "bf16": { "enabled": true }
 ```
-#### 保存和加载
-```python
- # 保存PP模型
-    save_dir = "./checkpoint"
-    engine.save_checkpoint(save_dir=save_dir)
-    # ---------------------- 模型加载 ----------------------
-    print("加载模型")
-    dist.barrier()
-    engine.load_checkpoint(
-        save_dir, tag=tag, load_optimizer_states=False, load_lr_scheduler_states=False
-    )
-    dist.barrier()
+##### 性能分析
+DeepSpeed 提供了训练过程中不同部分所花费时间的详细分
+```
+"wall_clock_breakdown": true,
+```
+当启用激活检查点时，可以在 `deepspeed_config` 文件中启用对每个检查点函数的前向和反向时间的分析。
+```
+{
+  "activation_checkpointing": {
+    "profile": true
+  }
+}
+```
+DeepSpeed 深度性能分析器测量 PyTorch 模型的耗时、浮点运算次数和参数数量，并显示哪些模块或层是瓶颈。
+```
+{
+  "flops_profiler": {
+    "enabled": true,
+    "profile_step": 1,
+    "module_depth": -1,
+    "top_modules": 3,
+    "detailed": true,
+    }
+}
+```
+DeepSpeed 监视器将实时训练指标记录到一个或多个监控后端，包括 PyTorch 的 TensorBoard、WandB 或直接记录到 CSV 文件
+```
+{
+  "tensorboard": {
+    "enabled": true,
+    "output_path": "output/ds_logs/",
+    "job_name": "train_bert"
+  }
+  "wandb": {
+    "enabled": true,
+    "team": "my_team",
+    "group": "my_group",
+    "project": "my_project"
+  }
+  "csv_monitor": {
+    "enabled": true,
+    "output_path": "output/ds_logs/",
+    "job_name": "train_bert"
+  }
+}
+```
+DeepSpeed 提供了对在 `deepspeed.comm` 中启动的所有通信操作的日志记录
+```
+{
+  "comms_logger": {
+    "enabled": true,
+    "verbose": false,
+    "prof_all": true,
+    "debug": false
+  }
+```
+##### 自动调参
+[参考](https://www.deepspeed.ai/training/)
+
+DeepSpeed 自动调优器使用模型信息、系统信息和启发式方法来高效调整 Zero 阶段、微批大小和其他 Zero 配置。使用自动调优功能不需要 DeepSpeed 用户进行代码更改。
+```
+{
+  "autotuning": {
+    "enabled": true,
+    "results_dir": null,
+    "exps_dir": null,
+    "overwrite": false,
+    "metric": "throughput",
+    "num_nodes": null,
+    "num_gpus": null,
+    "start_profile_step": 3,
+    "end_profile_step": 5,
+    "fast": true,
+    "num_tuning_micro_batch_sizes": 3,
+    "tuner_type": "model_based",
+    "tuner_early_stopping": 5,
+    "tuner_num_trials": 50,
+    "arg_mappings": null
+  }
+}
 ```
 #### 示例
 ##### 数据并行
@@ -653,59 +803,6 @@ for step in range(100):
     loss = model_engine.train_batch(data_iter=dataiter)
 ```
 
-##### Zero
-
-```python
-import torch
-import argparse
-import deepspeed
-import os
-import sys
-
-local_rank = int(os.environ["LOCAL_RANK"])
-device = "npu"
-class SimpleModel(torch.nn.Module):
-    def __init__(self):
-        super(SimpleModel, self).__init__()
-        self.fc1 = torch.nn.Linear(784, 128)
-        self.fc2 = torch.nn.Linear(128, 10)
-
-    def forward(self, x):
-        x = torch.relu(self.fc1(x))
-        return self.fc2(x)
-# Use ZeRO optimization to define the model and DeepSpeed settings
-deepspeed_config = {
-    "train_batch_size": 64,
-    "optimizer": {
-        "type": "Adam",
-        "params": {
-            "lr": 0.001
-        }
-    },
-    "zero_optimization": {
-        "stage": 2 # Toggle gradient partitioning using ZeRO Stage 2
-    }
-}
-
-# Initialize model
-model = SimpleModel()
-parameters = filter(models.parameters(),lambda x:x.required_gred())
-# Initialize DeepSpeed with ZeRO optimization
-model_engine, optimizer, _, _ = deepspeed.initialize(
-    config=deepspeed_config,
-    model=model,
-    parameters
-)
-
-# Forward pass
-inputs = torch.randn(64, 784).to(f"{device}:{local_rank}")
-labels = torch.randn(64,10).to(f"{device}:{local_rank}")
-loss_fn = torch.nn.CrossEntropyLoss()
-outputs = model_engine(inputs)
-loss = loss_fn(outputs,labels)
-# Backward pass and optimization
-model_engine.backward(loss)
-model_engine.step()
 ```
 ##### sheduler
 
